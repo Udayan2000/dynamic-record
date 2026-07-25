@@ -1,13 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -43,6 +37,7 @@ import {
     Inbox,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Pagination, PerPageSelect } from "@/components/ui/pagination";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -146,12 +141,20 @@ function EmptyState({ label }: { label: string }) {
 export default function Adminemployeepage() {
     const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
     const [activity] = useState<ActivityItem[]>(INITIAL_ACTIVITY);
-
+    const router = useRouter();
     const [viewTarget, setViewTarget] = useState<Employee | null>(null);
     const [editTarget, setEditTarget] = useState<Employee | null>(null);
     const [editDraft, setEditDraft] = useState({ name: "", email: "", adress: "" });
     const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
     const [statusTarget, setStatusTarget] = useState<Employee | null>(null);
+
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(10);
+    const totalItems = 137;
+    const handlePerPageChange = (value: number) => {
+        setPerPage(value);
+        setPage(1);
+    };
 
     // Stats derived live from employee state — nothing here is hard-coded.
     const stats = useMemo(() => {
@@ -208,10 +211,10 @@ export default function Adminemployeepage() {
 
                 <div className="flex justify-start gap-2 border-b px-2 py-2">
                     <div className="w-full max-w-[400px]">
-                        <Input id="employe_search" type="name" placeholder="Search Employees..." />
+                        <Input id="employe_search" type="name" placeholder="Search Employees..." onClick={() => router.push("/admin/employees/addemployee")} />
                     </div>
                     <div className="">
-                        <Button type="submit" className="w-full cursor-pointer" variant="default">
+                        <Button type="submit" className="w-full cursor-pointer" variant="outline">
                             Add Employee
                         </Button>
                     </div>
@@ -304,11 +307,18 @@ export default function Adminemployeepage() {
                             </tbody>
                         </table>
                     </div>
-                    
+
                 </div>
 
-                <div className="flex justify-start gap-2 px-2 py-2">
-                     
+                <div className="flex justify-between items-center gap-2 px-2 py-2">
+                    <Pagination
+                        currentPage={page}
+                        totalItems={totalItems}
+                        itemsPerPage={perPage}
+                        onPageChange={setPage}
+                    />
+
+                    <PerPageSelect value={perPage} onChange={handlePerPageChange} />
                 </div>
             </div>
 
