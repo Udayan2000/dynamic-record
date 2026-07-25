@@ -214,7 +214,7 @@ export default function Adminemployeepage() {
                         <Input id="employe_search" type="name" placeholder="Search Employees..." onClick={() => router.push("/admin/employees/addemployee")} />
                     </div>
                     <div className="">
-                        <Button type="submit" className="w-full cursor-pointer" variant="outline">
+                        <Button type="submit" className="w-full cursor-pointer" variant="primary">
                             Add Employee
                         </Button>
                     </div>
