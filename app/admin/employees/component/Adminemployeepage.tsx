@@ -211,10 +211,10 @@ export default function Adminemployeepage() {
 
                 <div className="flex justify-start gap-2 border-b px-2 py-2">
                     <div className="w-full max-w-[400px]">
-                        <Input id="employe_search" type="name" placeholder="Search Employees..." onClick={() => router.push("/admin/employees/addemployee")} />
+                        <Input id="employe_search" type="name" placeholder="Search Employees..."  />
                     </div>
                     <div className="">
-                        <Button type="submit" className="w-full cursor-pointer" variant="default">
+                        <Button type="submit" className="w-full cursor-pointer" variant="default" onClick={() => router.push("/admin/employees/addemployee")}>
                             Add Employee
                         </Button>
                     </div>
