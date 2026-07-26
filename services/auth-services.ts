@@ -12,7 +12,7 @@ export const authService = {
   login: (payload: LoginPayload) =>
     apiClient
       .post<ApiResponse<{ user: User } & AuthTokens>>("/auth/login", payload)
-      .then((res) => res.data.data),
+      .then((res) => res.data),
 
   logout: () => apiClient.post("/auth/logout"),
 

@@ -1,33 +1,36 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { MOCK_USERS } from "@/lib/mock-user";
-import { SESSION_COOKIE } from "@/lib/auth";
 
 export async function POST(req: Request) {
-  const { email, password } = await req.json();
+  
+  const {email, password} = await req.json();
 
-  const match = MOCK_USERS.find((u) => u.email === email && u.password === password);
-  if (!match) {
-    return NextResponse.json(
-      { success: false, message: "Invalid email or password" },
-      { status: 401 }
-    );
+  try{
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email: email, password: password }),
+    });
+
+    const data = await response.json();
+    console.log(data);
+
+    if (response.ok) {
+      const cookieStore = await cookies();
+      cookieStore.set("access_token", data.token);
+      cookieStore.set("role", data.role);
+      cookieStore.set("user", JSON.stringify(data.user));
+    }
+
+    return NextResponse.json(data, {
+      status: response.status,
+    });
+
+  }catch(err){
+    return NextResponse.json({
+      message:err
+    })
   }
-
-  const { password: _password, ...user } = match;
-  const accessToken = `demo-token-${user.id}`;
-
-  const res = NextResponse.json({
-    success: true,
-    data: { user, accessToken, refreshToken: `demo-refresh-${user.id}` },
-  });
-
-  res.cookies.set(SESSION_COOKIE, JSON.stringify({ user, accessToken }), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 8, // 8 hours
-  });
-
-  return res;
 }

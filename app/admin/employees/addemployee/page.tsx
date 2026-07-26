@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, UserPlus, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useMutation } from "@tanstack/react-query";
+import { employeeService } from "@/services/employee-services";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -166,8 +168,18 @@ export default function AddEmployeePage() {
 
     const [values, setValues] = useState<EmployeeFormValues>(INITIAL_VALUES);
     const [errors, setErrors] = useState<FormErrors>({});
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
+
+    const mutation = useMutation({
+        mutationFn: (data: any) => employeeService.createEmployee(data),
+        onSuccess: () => {
+            router.push("/admin/employees");
+            router.refresh();
+        },
+        onError: () => {
+            setSubmitError("Couldn't add the employee. Try again.");
+        }
+    });
 
     function updateField<K extends keyof EmployeeFormValues>(
         key: K,
@@ -187,28 +199,14 @@ export default function AddEmployeePage() {
         setErrors(validationErrors);
         if (Object.keys(validationErrors).length > 0) return;
 
-        setIsSubmitting(true);
         setSubmitError(null);
 
-        try {
-            // Replace with your real endpoint / server action.
-            const res = await fetch("/api/employees", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(values),
-            });
-
-            if (!res.ok) {
-                throw new Error("Request failed");
-            }
-
-            router.push("/admin/employees");
-            router.refresh();
-        } catch {
-            setSubmitError("Couldn't add the employee. Try again.");
-        } finally {
-            setIsSubmitting(false);
-        }
+        mutation.mutate({
+            employee_name: values.name,
+            employee_email: values.email,
+            employee_address: values.address,
+            status: values.status
+        });
     }
 
     return (
@@ -286,12 +284,12 @@ export default function AddEmployeePage() {
                             type="button"
                             variant="outline"
                             onClick={() => router.back()}
-                            disabled={isSubmitting}
+                            disabled={mutation.isPending}
                         >
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={isSubmitting}>
-                            {isSubmitting ? (
+                        <Button type="submit" disabled={mutation.isPending}>
+                            {mutation.isPending ? (
                                 <>
                                     <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                                     Adding...

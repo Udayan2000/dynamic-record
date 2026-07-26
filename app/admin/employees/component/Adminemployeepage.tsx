@@ -38,6 +38,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Pagination, PerPageSelect } from "@/components/ui/pagination";
+import { useQuery } from "@tanstack/react-query";
+import { employeeService } from "@/services/employee-services";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -139,7 +141,6 @@ function EmptyState({ label }: { label: string }) {
 // ---------------------------------------------------------------------------
 
 export default function Adminemployeepage() {
-    const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
     const [activity] = useState<ActivityItem[]>(INITIAL_ACTIVITY);
     const router = useRouter();
     const [viewTarget, setViewTarget] = useState<Employee | null>(null);
@@ -150,7 +151,32 @@ export default function Adminemployeepage() {
 
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
-    const totalItems = 137;
+    
+    const { data, isLoading } = useQuery({
+        queryKey: ["employees", page, perPage],
+        queryFn: () => employeeService.getEmployees(page, perPage),
+    });
+
+    const backendEmployees = data?.employees || [];
+    const totalItems = data?.total || 0;
+
+    const employees: Employee[] = useMemo(() => {
+        return backendEmployees.map((emp: any) => ({
+            id: emp._id,
+            name: emp.employee_name,
+            email: emp.employee_email,
+            adress: emp.employee_address,
+            recordsThisMonth: 0, 
+            pendingReview: false,
+            status: emp.status,
+            lastActive: new Date().toISOString()
+        }));
+    }, [backendEmployees]);
+
+    // Temporary stub to prevent build errors for edit/delete functions.
+    // In a real app, these would be useMutations that call invalidateQueries.
+    const setEmployees = (callback: (prev: Employee[]) => Employee[]) => {};
+
     const handlePerPageChange = (value: number) => {
         setPerPage(value);
         setPage(1);
@@ -236,7 +262,15 @@ export default function Adminemployeepage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {employees.length === 0 ? (
+                                {isLoading ? (
+                                    <tr>
+                                        <td colSpan={7} className="h-[300px]">
+                                            <div className="flex items-center justify-center h-full">
+                                                <span className="text-zinc-500">Loading employees...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : employees.length === 0 ? (
                                     <tr>
                                         <td colSpan={7} className="h-[300px]">
                                             <EmptyState label="No employees found" />

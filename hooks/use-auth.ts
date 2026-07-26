@@ -5,19 +5,16 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { authService } from "@/services/auth-services";
 import { useAuthStore } from "@/store/auth-store";
-import { getDefaultRouteForRole } from "@/lib/permissions";
 import type { ForgotPasswordPayload, LoginPayload, ResetPasswordPayload } from "@/types";
 
 export function useLogin() {
   const router = useRouter();
-  const setSession = useAuthStore((s) => s.setSession);
-
+ 
   return useMutation({
     mutationFn: (payload: LoginPayload) => authService.login(payload),
-    onSuccess: (data) => {
-      setSession(data.user, data.accessToken);
-      toast.success(`Welcome back, ${data.user.name}`);
-      router.push(getDefaultRouteForRole(data.user.role));
+    onSuccess: () => {
+      toast.success(`Welcome back!`); 
+      router.push("/admin/dashboard");
     },
     onError: (error: unknown) => {
       const message =
