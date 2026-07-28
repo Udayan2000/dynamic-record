@@ -9,10 +9,12 @@ import type { ForgotPasswordPayload, LoginPayload, ResetPasswordPayload } from "
 
 export function useLogin() {
   const router = useRouter();
+  const setSession = useAuthStore((s) => s.setSession);
  
   return useMutation({
     mutationFn: (payload: LoginPayload) => authService.login(payload),
-    onSuccess: () => {
+    onSuccess: (data: any) => {
+      setSession(data.user, data.token);
       toast.success(`Welcome back!`); 
       router.push("/admin/dashboard");
     },

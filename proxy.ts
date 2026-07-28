@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 export async function proxy(request: NextRequest) {
     const token = request.cookies.get('access_token')?.value;
-
+    console.log("token", token);
     if (!token) {
         return NextResponse.redirect(new URL('/login', request.url));
     }
