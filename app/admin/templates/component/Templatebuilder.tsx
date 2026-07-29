@@ -26,10 +26,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alertdialog";
 import {
+  AlertCircle,
   ArrowLeft,
   Ban,
   Camera,
+  CheckCircle2,
   GripHorizontal,
+  Loader2,
   Mail,
   Pencil,
   Plus,
@@ -42,29 +45,21 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+// import { templatesApi } from "@/services/auth-services"; 
+import {
+  CreateTemplatePayload,
+  TemplateAccess,
+  TemplateField,
+  TemplateFieldType,
+  TemplateStatus,
+} from "@/types";
+import { templatesApi } from "@/services/templatebuilder-services";
 
 // ---------------------------------------------------------------------------
-// Types
+// Constants
 // ---------------------------------------------------------------------------
 
-type FieldType = "text" | "textarea" | "dropdown" | "radio" | "multiselect";
-type TemplateStatus = "active" | "inactive";
-
-interface CustomField {
-  id: string;
-  label: string;
-  type: FieldType;
-  options: string[]; // used by dropdown / radio / multiselect
-  required: boolean;
-}
-
-interface AccessUser {
-  id: string;
-  name: string;
-  email: string;
-}
-
-const FIELD_TYPES: { value: FieldType; label: string; needsOptions: boolean }[] = [
+const FIELD_TYPES: { value: TemplateFieldType; label: string; needsOptions: boolean }[] = [
   { value: "text", label: "Text input", needsOptions: false },
   { value: "textarea", label: "Text area", needsOptions: false },
   { value: "dropdown", label: "Dropdown", needsOptions: true },
@@ -282,7 +277,7 @@ function ImageCaptureField({
 // Live, read-only preview of a single custom field (used in the form preview)
 // ---------------------------------------------------------------------------
 
-function FieldPreview({ field }: { field: CustomField }) {
+function FieldPreview({ field }: { field: TemplateField }) {
   return (
     <div>
       <Label className="text-sm text-zinc-700">
@@ -293,7 +288,10 @@ function FieldPreview({ field }: { field: CustomField }) {
         {field.type === "text" && <Input placeholder="User input" disabled />}
         {field.type === "textarea" && <Textarea placeholder="User input" disabled rows={3} />}
         {field.type === "dropdown" && (
-          <select disabled className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm text-zinc-400">
+          <select
+            disabled
+            className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm text-zinc-400"
+          >
             <option>{field.options[0] || "Choose an option"}</option>
           </select>
         )}
@@ -336,17 +334,17 @@ export default function TemplateBuilderPage() {
   const [image, setImage] = useState<string | null>(null);
 
   // Access control
-  const [accessUsers, setAccessUsers] = useState<AccessUser[]>([]);
+  const [accessUsers, setAccessUsers] = useState<TemplateAccess[]>([]);
   const [accessName, setAccessName] = useState("");
   const [accessEmail, setAccessEmail] = useState("");
 
   // Custom fields
-  const [fields, setFields] = useState<CustomField[]>([]);
+  const [fields, setFields] = useState<TemplateField[]>([]);
   const [fieldDialogOpen, setFieldDialogOpen] = useState(false);
   const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
   const [draft, setDraft] = useState({
     label: "",
-    type: "text" as FieldType,
+    type: "text" as TemplateFieldType,
     optionsText: "",
     required: false,
   });
@@ -354,6 +352,11 @@ export default function TemplateBuilderPage() {
   const [deleteFieldId, setDeleteFieldId] = useState<string | null>(null);
   const [showDeleteTemplate, setShowDeleteTemplate] = useState(false);
   const [showStatusConfirm, setShowStatusConfirm] = useState(false);
+
+  // Save state
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const selectedTypeConfig = FIELD_TYPES.find((t) => t.value === draft.type)!;
 
@@ -363,7 +366,7 @@ export default function TemplateBuilderPage() {
     setFieldDialogOpen(true);
   }
 
-  function openEditField(field: CustomField) {
+  function openEditField(field: TemplateField) {
     setEditingFieldId(field.id);
     setDraft({
       label: field.label,
@@ -406,7 +409,10 @@ export default function TemplateBuilderPage() {
 
   function addAccessUser() {
     if (!accessName.trim() || !accessEmail.trim()) return;
-    setAccessUsers((prev) => [...prev, { id: uid(), name: accessName.trim(), email: accessEmail.trim() }]);
+    setAccessUsers((prev) => [
+      ...prev,
+      { id: uid(), name: accessName.trim(), email: accessEmail.trim() },
+    ]);
     setAccessName("");
     setAccessEmail("");
   }
@@ -415,19 +421,39 @@ export default function TemplateBuilderPage() {
     setAccessUsers((prev) => prev.filter((u) => u.id !== id));
   }
 
-  function handleSaveTemplate() {
-    const payload = {
-      name: templateName,
+  async function handleSaveTemplate() {
+    setSaveError(null);
+    setSaveSuccess(false);
+
+    if (!templateName.trim()) {
+      setSaveError("Give the template a name before saving.");
+      return;
+    }
+
+    const payload: CreateTemplatePayload = {
+      name: templateName.trim(),
       status,
       image,
       imageHeight,
       access: accessUsers,
       fields,
     };
-    // Replace with a real API call, e.g.:
-    // await fetch("/api/templates", { method: "POST", body: JSON.stringify(payload) });
-    console.log("Saving template", payload);
-    router.back();
+
+    setIsSaving(true);
+    try {
+      const res = await templatesApi.template(payload);
+      if (!res.success) {
+        throw new Error(res.message || "Failed to save template");
+      }
+      setSaveSuccess(true);
+      router.refresh();
+      // brief pause so the success state is visible before navigating away
+      setTimeout(() => router.back(), 500);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Something went wrong while saving.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -441,6 +467,7 @@ export default function TemplateBuilderPage() {
             </Button>
             <div>
               <Input
+                id="template-name-input"
                 value={templateName}
                 onChange={(e) => setTemplateName(e.target.value)}
                 className="h-8 border-none px-0 text-lg font-semibold shadow-none focus-visible:ring-0"
@@ -460,7 +487,11 @@ export default function TemplateBuilderPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => document.getElementById("template-name-input")?.focus()}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => document.getElementById("template-name-input")?.focus()}
+            >
               <Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit template
             </Button>
             <Button variant="outline" size="sm" onClick={() => setShowStatusConfirm(true)}>
@@ -477,7 +508,7 @@ export default function TemplateBuilderPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 max-h-[calc(100vh-188px)]  overflow-y-auto">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 max-h-[calc(100vh-188px)] overflow-y-auto">
           {/* Left / main column --------------------------------------------- */}
           <div className="flex flex-col gap-3 lg:col-span-2">
             <ImageCaptureField
@@ -612,8 +643,33 @@ export default function TemplateBuilderPage() {
               )}
             </div>
 
-            <Button className="w-full cursor-pointer" onClick={handleSaveTemplate}>
-              <Save className="mr-1.5 h-4 w-4" /> Save template
+            {saveError && (
+              <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-2.5 text-xs text-red-700">
+                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>{saveError}</span>
+              </div>
+            )}
+            {saveSuccess && (
+              <div className="flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50 p-2.5 text-xs text-emerald-700">
+                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>Template saved.</span>
+              </div>
+            )}
+
+            <Button
+              className="w-full cursor-pointer"
+              onClick={handleSaveTemplate}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Saving…
+                </>
+              ) : (
+                <>
+                  <Save className="mr-1.5 h-4 w-4" /> Save template
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -643,7 +699,9 @@ export default function TemplateBuilderPage() {
               <select
                 id="field-type"
                 value={draft.type}
-                onChange={(e) => setDraft((d) => ({ ...d, type: e.target.value as FieldType }))}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, type: e.target.value as TemplateFieldType }))
+                }
                 className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
               >
                 {FIELD_TYPES.map((t) => (

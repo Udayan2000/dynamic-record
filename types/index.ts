@@ -52,3 +52,41 @@ export interface ApiError {
   message: string;
   errors?: Record<string, string[]>;
 }
+
+export type TemplateFieldType  = "text" | "textarea" | "dropdown" | "radio" | "multiselect";
+export type TemplateStatus = "active" | "inactive";
+
+
+export interface TemplateAccess {
+    id: string;
+  name: string;
+  email: string;
+}
+
+export interface TemplateField {
+    id: string;
+  label: string;
+  type: string;
+  required: boolean;
+  options: string[];
+}
+
+export interface CreateTemplatePayload {
+  name: string;
+  status: string;
+  image: string;
+  imageHeight: number;
+  access: TemplateAccess[];
+  fields: TemplateField[];
+}
+
+export interface Template {
+  id: string;
+  name: string;
+  status: string;
+  image: string;
+  imageHeight: number;
+  access: TemplateAccess[];
+  fields: TemplateField[];
+  createdAt: string;
+}

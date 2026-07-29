@@ -2,9 +2,11 @@ import { apiClient } from "@/services/api-client";
 import type {
   ApiResponse,
   AuthTokens,
+  CreateTemplatePayload,
   ForgotPasswordPayload,
   LoginPayload,
   ResetPasswordPayload,
+  Template,
   User,
 } from "@/types"
 
@@ -24,3 +26,4 @@ export const authService = {
 
   me: () => apiClient.get<ApiResponse<User>>("/auth/me").then((res) => res.data.data),
 };
+
