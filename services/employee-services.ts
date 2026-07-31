@@ -26,5 +26,20 @@ export const employeeService = {
       params: { page, limit }
     });
     return response.data;
+  },
+
+  updateEmployee: async (id: string, payload: Partial<EmployeePayload>) => {
+    const response = await apiClient.put(`/employees/${id}`, payload);
+    return response.data;
+  },
+
+  toggleStatus: async (id: string) => {
+    const response = await apiClient.patch(`/employees/${id}/status`);
+    return response.data;
+  },
+
+  deleteEmployee: async (id: string) => {
+    const response = await apiClient.delete(`/employees/${id}`);
+    return response.data;
   }
 };

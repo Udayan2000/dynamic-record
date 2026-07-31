@@ -285,12 +285,11 @@ function FieldPreview({ field }: { field: TemplateField }) {
         {field.required && <span className="ml-1 text-red-500">*</span>}
       </Label>
       <div className="mt-1.5">
-        {field.type === "text" && <Input placeholder="User input" disabled />}
-        {field.type === "textarea" && <Textarea placeholder="User input" disabled rows={3} />}
+        {field.type === "text" && <Input placeholder="User input" />}
+        {field.type === "textarea" && <Textarea placeholder="User input" rows={3} />}
         {field.type === "dropdown" && (
           <select
-            disabled
-            className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm text-zinc-400"
+            className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm text-zinc-800"
           >
             <option>{field.options[0] || "Choose an option"}</option>
           </select>
@@ -299,7 +298,7 @@ function FieldPreview({ field }: { field: TemplateField }) {
           <div className="flex flex-col gap-1.5">
             {(field.options.length ? field.options : ["Option"]).map((opt, i) => (
               <label key={i} className="flex items-center gap-2 text-sm text-zinc-600">
-                <input type="radio" disabled className="h-3.5 w-3.5" /> {opt}
+                <input type="radio" name={`preview_radio_${field.id}`} className="h-3.5 w-3.5" /> {opt}
               </label>
             ))}
           </div>
@@ -308,7 +307,7 @@ function FieldPreview({ field }: { field: TemplateField }) {
           <div className="flex flex-col gap-1.5">
             {(field.options.length ? field.options : ["Option"]).map((opt, i) => (
               <label key={i} className="flex items-center gap-2 text-sm text-zinc-600">
-                <input type="checkbox" disabled className="h-3.5 w-3.5" /> {opt}
+                <input type="checkbox" className="h-3.5 w-3.5" /> {opt}
               </label>
             ))}
           </div>
@@ -370,7 +369,7 @@ export default function TemplateBuilderPage() {
     setEditingFieldId(field.id);
     setDraft({
       label: field.label,
-      type: field.type,
+      type: field.type as TemplateFieldType,
       optionsText: field.options.join(", "),
       required: field.required,
     });
@@ -433,7 +432,7 @@ export default function TemplateBuilderPage() {
     const payload: CreateTemplatePayload = {
       name: templateName.trim(),
       status,
-      image,
+      image: image || "",
       imageHeight,
       access: accessUsers,
       fields,
@@ -448,7 +447,7 @@ export default function TemplateBuilderPage() {
       setSaveSuccess(true);
       router.refresh();
       // brief pause so the success state is visible before navigating away
-      setTimeout(() => router.back(), 500);
+      setTimeout(() => router.push('/admin/templates'), 500);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Something went wrong while saving.");
     } finally {
