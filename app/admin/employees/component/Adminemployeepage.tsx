@@ -38,7 +38,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Pagination, PerPageSelect } from "@/components/ui/pagination";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { employeeService } from "@/services/employee-services";
 
 // ---------------------------------------------------------------------------
@@ -143,6 +143,7 @@ function EmptyState({ label }: { label: string }) {
 export default function Adminemployeepage() {
     const [activity] = useState<ActivityItem[]>(INITIAL_ACTIVITY);
     const router = useRouter();
+    const queryClient = useQueryClient();
     const [viewTarget, setViewTarget] = useState<Employee | null>(null);
     const [editTarget, setEditTarget] = useState<Employee | null>(null);
     const [editDraft, setEditDraft] = useState({ name: "", email: "", adress: "" });
@@ -173,9 +174,29 @@ export default function Adminemployeepage() {
         }));
     }, [backendEmployees]);
 
-    // Temporary stub to prevent build errors for edit/delete functions.
-    // In a real app, these would be useMutations that call invalidateQueries.
-    const setEmployees = (callback: (prev: Employee[]) => Employee[]) => {};
+    const editMutation = useMutation({
+        mutationFn: (data: { id: string, payload: any }) => employeeService.updateEmployee(data.id, data.payload),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["employees"] });
+            setEditTarget(null);
+        }
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => employeeService.deleteEmployee(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["employees"] });
+            setDeleteTarget(null);
+        }
+    });
+
+    const toggleMutation = useMutation({
+        mutationFn: (id: string) => employeeService.toggleStatus(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["employees"] });
+            setStatusTarget(null);
+        }
+    });
 
     const handlePerPageChange = (value: number) => {
         setPerPage(value);
@@ -202,28 +223,24 @@ export default function Adminemployeepage() {
 
     function saveEdit() {
         if (!editTarget) return;
-        setEmployees((prev) =>
-            prev.map((e) => (e.id === editTarget.id ? { ...e, ...editDraft } : e))
-        );
-        setEditTarget(null);
+        editMutation.mutate({ 
+            id: editTarget.id, 
+            payload: { 
+                employee_name: editDraft.name, 
+                employee_email: editDraft.email, 
+                employee_address: editDraft.adress 
+            } 
+        });
     }
 
     function confirmDelete() {
         if (!deleteTarget) return;
-        setEmployees((prev) => prev.filter((e) => e.id !== deleteTarget.id));
-        setDeleteTarget(null);
+        deleteMutation.mutate(deleteTarget.id);
     }
 
     function confirmStatusToggle() {
         if (!statusTarget) return;
-        setEmployees((prev) =>
-            prev.map((e) =>
-                e.id === statusTarget.id
-                    ? { ...e, status: e.status === "active" ? "inactive" : "active" }
-                    : e
-            )
-        );
-        setStatusTarget(null);
+        toggleMutation.mutate(statusTarget.id);
     }
 
     return (
@@ -432,7 +449,7 @@ export default function Adminemployeepage() {
                                 <Input
                                     id="role"
                                     value={editDraft.adress}
-                                    onChange={(e) => setEditDraft((d) => ({ ...d, address: e.target.value }))}
+                                    onChange={(e) => setEditDraft((d) => ({ ...d, adress: e.target.value }))}
                                 />
                             </div>
                         </div>
@@ -441,7 +458,9 @@ export default function Adminemployeepage() {
                         <Button variant="outline" onClick={() => setEditTarget(null)}>
                             Cancel
                         </Button>
-                        <Button onClick={saveEdit}>Save changes</Button>
+                        <Button onClick={saveEdit} disabled={editMutation.isPending}>
+                            {editMutation.isPending ? "Saving..." : "Save changes"}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -462,8 +481,9 @@ export default function Adminemployeepage() {
                         <AlertDialogAction
                             className="bg-red-600 hover:bg-red-700"
                             onClick={confirmDelete}
+                            disabled={deleteMutation.isPending}
                         >
-                            Delete
+                            {deleteMutation.isPending ? "Deleting..." : "Delete"}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -486,8 +506,10 @@ export default function Adminemployeepage() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmStatusToggle}>
-                            {statusTarget?.status === "active" ? "Deactivate" : "Reactivate"}
+                        <AlertDialogAction onClick={confirmStatusToggle} disabled={toggleMutation.isPending}>
+                            {toggleMutation.isPending 
+                                ? "Processing..." 
+                                : statusTarget?.status === "active" ? "Deactivate" : "Reactivate"}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
