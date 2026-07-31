@@ -18,7 +18,7 @@ export default function Admintemplatepage() {
 
     return (
         <>
-            <div className="w-full rounded-[10px] border border-[#bec1c7a1]! bg-white mt-4 min-h-[500px]">
+            <div className="w-full rounded-[10px] border border-[#bec1c7a1]! bg-white mt-4 ">
                 <div className="flex justify-start gap-2 border-b px-2 py-2">
                     <div className="w-full max-w-[400px]">
                         <Input id="search-template" type="text" placeholder="Search templates..." />
@@ -35,7 +35,7 @@ export default function Admintemplatepage() {
                     </div>
                 </div>
                 
-                <div className="w-full p-4">
+                <div className="w-full p-2 max-h-[calc(100vh-223px)] overflow-y-auto">
                     {isLoading ? (
                         <div className="flex items-center justify-center h-[300px] text-zinc-500">
                             Loading templates...
