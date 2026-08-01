@@ -461,38 +461,35 @@ export default function TemplateBuilderPage() {
         {/* Top action bar --------------------------------------------------- */}
         <div className="mb-3 flex flex-col gap-3 rounded-sm border border-[#f1f5fe] bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => router.back()} title="Back">
+            <Button variant="ghost" size="icon" onClick={() => router.back()} title="Back" className="self-end mb-1">
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="template-name-input" className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Template Name</Label>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "rounded-full border px-2 py-0 text-[10px]",
+                    status === "active"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                      : "border-zinc-200 bg-zinc-100 text-zinc-500"
+                  )}
+                >
+                  {status === "active" ? "Active" : "Inactive"}
+                </Badge>
+              </div>
               <Input
                 id="template-name-input"
                 value={templateName}
                 onChange={(e) => setTemplateName(e.target.value)}
-                className="h-8 border-none px-0 text-lg font-semibold shadow-none focus-visible:ring-0"
+                placeholder="Enter template name..."
+                className="h-10 px-3 text-lg font-bold shadow-sm w-full min-w-[300px] border-zinc-200 focus-visible:ring-1"
               />
-              <Badge
-                variant="outline"
-                className={cn(
-                  "mt-0.5 rounded-full border px-2 py-0 text-[11px]",
-                  status === "active"
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                    : "border-zinc-200 bg-zinc-100 text-zinc-500"
-                )}
-              >
-                {status === "active" ? "Active" : "Inactive"}
-              </Badge>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => document.getElementById("template-name-input")?.focus()}
-            >
-              <Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit template
-            </Button>
+          <div className="flex flex-wrap gap-2 items-end">
             <Button variant="outline" size="sm" onClick={() => setShowStatusConfirm(true)}>
               {status === "active" ? (
                 <Ban className="mr-1.5 h-3.5 w-3.5 text-amber-600" />
@@ -507,7 +504,7 @@ export default function TemplateBuilderPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 max-h-[calc(100vh-188px)] overflow-y-auto">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 max-h-[calc(100vh-193px)] overflow-y-auto">
           {/* Left / main column --------------------------------------------- */}
           <div className="flex flex-col gap-3 lg:col-span-2">
             <ImageCaptureField
@@ -596,9 +593,9 @@ export default function TemplateBuilderPage() {
             </div>
 
             <div className="rounded-sm border border-[#f1f5fe] bg-white p-3">
-              <h3 className="mb-2 text-sm font-semibold text-zinc-800">Access</h3>
+              <h3 className="mb-2 text-sm font-semibold text-zinc-800">Assign Employees (Grant Access)</h3>
               <p className="mb-2 text-xs text-zinc-400">
-                Grant specific people access to use this template.
+                Grant specific employees access to use this template. As an admin, you can edit all features.
               </p>
               <div className="flex flex-col gap-2">
                 <div className="relative">

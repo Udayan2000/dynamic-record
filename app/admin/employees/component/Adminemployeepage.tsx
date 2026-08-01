@@ -22,6 +22,12 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alertdialog";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -35,12 +41,13 @@ import {
     Ban,
     RotateCcw,
     Inbox,
+    MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Pagination, PerPageSelect } from "@/components/ui/pagination";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { employeeService } from "@/services/employee-services";
-
+import { TableSkeleton } from "@/components/ui/tableskeleton";
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -152,7 +159,9 @@ export default function Adminemployeepage() {
 
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
-    
+    const [searchTerm, setSearchTerm] = useState("");
+    const [isSearching, setIsSearching] = useState(false);
+
     const { data, isLoading } = useQuery({
         queryKey: ["employees", page, perPage],
         queryFn: () => employeeService.getEmployees(page, perPage),
@@ -162,39 +171,107 @@ export default function Adminemployeepage() {
     const totalItems = data?.total || 0;
 
     const employees: Employee[] = useMemo(() => {
-        return backendEmployees.map((emp: any) => ({
+        let list = backendEmployees.map((emp: any) => ({
             id: emp._id,
-            name: emp.employee_name,
-            email: emp.employee_email,
-            adress: emp.employee_address,
-            recordsThisMonth: 0, 
+            name: emp.employee_name || "",
+            email: emp.employee_email || "",
+            adress: emp.employee_address || "",
+            recordsThisMonth: 0,
             pendingReview: false,
-            status: emp.status,
+            status: emp.status || "inactive",
             lastActive: new Date().toISOString()
         }));
-    }, [backendEmployees]);
+
+        if (searchTerm) {
+            const lower = searchTerm.toLowerCase();
+            list = list.filter((emp: Employee) => 
+                emp.name.toLowerCase().includes(lower) || 
+                emp.email.toLowerCase().includes(lower) || 
+                emp.adress?.toLowerCase().includes(lower)
+            );
+        }
+        return list;
+    }, [backendEmployees, searchTerm]);
 
     const editMutation = useMutation({
         mutationFn: (data: { id: string, payload: any }) => employeeService.updateEmployee(data.id, data.payload),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["employees"] });
+        onMutate: async (newEmp) => {
+            await queryClient.cancelQueries({ queryKey: ["employees"] });
+            const previousData = queryClient.getQueryData(["employees"]);
+            
+            queryClient.setQueriesData({ queryKey: ["employees"] }, (old: any) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    employees: old.employees.map((emp: any) => 
+                        emp._id === newEmp.id ? { ...emp, ...newEmp.payload } : emp
+                    )
+                };
+            });
             setEditTarget(null);
+            return { previousData };
+        },
+        onError: (err, newEmp, context) => {
+            if (context?.previousData) {
+                queryClient.setQueriesData({ queryKey: ["employees"] }, context.previousData);
+            }
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["employees"] });
         }
     });
 
     const deleteMutation = useMutation({
         mutationFn: (id: string) => employeeService.deleteEmployee(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["employees"] });
+        onMutate: async (id) => {
+            await queryClient.cancelQueries({ queryKey: ["employees"] });
+            const previousData = queryClient.getQueryData(["employees"]);
+            
+            queryClient.setQueriesData({ queryKey: ["employees"] }, (old: any) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    employees: old.employees.filter((emp: any) => emp._id !== id)
+                };
+            });
             setDeleteTarget(null);
+            return { previousData };
+        },
+        onError: (err, id, context) => {
+            if (context?.previousData) {
+                queryClient.setQueriesData({ queryKey: ["employees"] }, context.previousData);
+            }
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["employees"] });
         }
     });
 
     const toggleMutation = useMutation({
         mutationFn: (id: string) => employeeService.toggleStatus(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["employees"] });
+        onMutate: async (id) => {
+            await queryClient.cancelQueries({ queryKey: ["employees"] });
+            const previousData = queryClient.getQueryData(["employees"]);
+            
+            queryClient.setQueriesData({ queryKey: ["employees"] }, (old: any) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    employees: old.employees.map((emp: any) => 
+                        emp._id === id ? { ...emp, status: emp.status === "active" ? "inactive" : "active" } : emp
+                    )
+                };
+            });
             setStatusTarget(null);
+            return { previousData };
+        },
+        onError: (err, id, context) => {
+            if (context?.previousData) {
+                queryClient.setQueriesData({ queryKey: ["employees"] }, context.previousData);
+            }
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ["employees"] });
         }
     });
 
@@ -223,13 +300,13 @@ export default function Adminemployeepage() {
 
     function saveEdit() {
         if (!editTarget) return;
-        editMutation.mutate({ 
-            id: editTarget.id, 
-            payload: { 
-                employee_name: editDraft.name, 
-                employee_email: editDraft.email, 
-                employee_address: editDraft.adress 
-            } 
+        editMutation.mutate({
+            id: editTarget.id,
+            payload: {
+                employee_name: editDraft.name,
+                employee_email: editDraft.email,
+                employee_address: editDraft.adress
+            }
         });
     }
 
@@ -243,18 +320,37 @@ export default function Adminemployeepage() {
         toggleMutation.mutate(statusTarget.id);
     }
 
+    const EMPLOYEE_SKELETON_COLUMNS: React.ComponentProps<typeof TableSkeleton>["columns"] = [
+        { kind: "text", className: "w-[150px] min-w-[150px]", barWidth: "65%" },
+        { kind: "text", className: "w-[240px] min-w-[240px]", barWidth: "75%" },
+        { kind: "text", className: "w-[180px] min-w-[180px]", barWidth: "55%" },
+        { kind: "text", className: "w-[100px] min-w-[100px]", barWidth: "30%" },
+        { kind: "badge", className: "w-[120px] min-w-[120px]", barWidth: "68px" },
+        { kind: "text", className: "w-[160px] min-w-[160px]", barWidth: "116px" },
+        { kind: "actions", className: "w-[80px] min-w-[80px]", align: "right", actionCount: 1 },
+    ];
+
     return (
-        <div className="">
+        <div className="flex flex-col">
             {/* ---------------------------------------------------------------- */}
             {/* Stats + employee table                                           */}
             {/* ---------------------------------------------------------------- */}
 
+            <div className="flex w-full flex-1 min-h-0 flex-col rounded-[10px] border border-[#bec1c7a1] bg-white mt-4">
 
-            <div className="w-full rounded-[10px] border border-[#bec1c7a1]! bg-white  mt-4">
-
-                <div className="flex justify-start gap-2 border-b px-2 py-2">
+                <div className="flex flex-col sm:flex-row justify-between gap-2 border-b px-4 py-3">
                     <div className="w-full max-w-[400px]">
-                        <Input id="employe_search" type="name" placeholder="Search Employees..."  />
+                        {/* <Input id="employe_search" type="name" placeholder="Search Employees..." /> */}
+                        <Input
+                            type="search"
+                            placeholder="Search employees..."
+                            isLoading={isSearching}
+                            onChange={() => setIsSearching(true)}
+                            onDebouncedChange={(value) => {
+                                setSearchTerm(value);
+                                setIsSearching(false);
+                            }}
+                        />
                     </div>
                     <div className="">
                         <Button type="submit" className="w-full cursor-pointer" variant="default" onClick={() => router.push("/admin/employees/addemployee")}>
@@ -264,10 +360,10 @@ export default function Adminemployeepage() {
                 </div>
 
                 {/* Employee table — scrolls both ways so it never breaks layout */}
-                <div className="w-full grid">
-                    <div className="max-h-[calc(100vh-250px)] overflow-y-auto overflow-x-auto">
-                        <table className="w-full  text-sm">
-                            <thead className="sticky top-0 z-10 bg-[#e7ecf7]  text-left text-xs uppercase tracking-wide text-zinc-500">
+                <div className="grid w-full p-1">
+                    <div className="h-[calc(100vh-290px)] overflow-y-auto overflow-x-auto w-full">
+                        <table className="w-full text-sm whitespace-nowrap min-w-[800px]">
+                            <thead className="sticky top-0 z-10 bg-[#e7ecf7] text-left text-xs uppercase tracking-wide text-zinc-500">
                                 <tr>
                                     <th className="px-3 py-2.5 font-medium">Name</th>
                                     <th className="px-3 py-2.5 font-medium">Email</th>
@@ -280,13 +376,7 @@ export default function Adminemployeepage() {
                             </thead>
                             <tbody>
                                 {isLoading ? (
-                                    <tr>
-                                        <td colSpan={7} className="h-[300px]">
-                                            <div className="flex items-center justify-center h-full">
-                                                <span className="text-zinc-500">Loading employees...</span>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                    <TableSkeleton columns={EMPLOYEE_SKELETON_COLUMNS} />
                                 ) : employees.length === 0 ? (
                                     <tr>
                                         <td colSpan={7} className="h-[300px]">
@@ -301,7 +391,6 @@ export default function Adminemployeepage() {
                                         >
                                             <td className="px-3 py-2.5">
                                                 <div className="font-medium text-zinc-800">{emp.name}</div>
-                                                {/* <div className="text-xs text-zinc-400"></div> */}
                                             </td>
                                             <td className="px-3 py-2.5 text-zinc-600">{emp.email}</td>
                                             <td className="px-3 py-2.5 text-zinc-600">{emp.adress}</td>
@@ -313,43 +402,46 @@ export default function Adminemployeepage() {
                                                 {formatDateTime(emp.lastActive)}
                                             </td>
                                             <td className="px-3 py-2.5">
-                                                <div className="flex items-center justify-end gap-1">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        title="View"
-                                                        onClick={() => setViewTarget(emp)}
-                                                    >
-                                                        <Eye className="h-4 w-4 text-zinc-500" />
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        title="Edit"
-                                                        onClick={() => openEdit(emp)}
-                                                    >
-                                                        <Pencil className="h-4 w-4 text-zinc-500" />
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        title={emp.status === "active" ? "Deactivate user" : "Reactivate user"}
-                                                        onClick={() => setStatusTarget(emp)}
-                                                    >
-                                                        {emp.status === "active" ? (
-                                                            <Ban className="h-4 w-4 text-amber-600" />
-                                                        ) : (
-                                                            <RotateCcw className="h-4 w-4 text-emerald-600" />
-                                                        )}
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        title="Delete"
-                                                        onClick={() => setDeleteTarget(emp)}
-                                                    >
-                                                        <Trash2 className="h-4 w-4 text-red-500" />
-                                                    </Button>
+                                                <div className="flex items-center justify-end">
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 text-zinc-500 hover:text-zinc-800"
+                                                            >
+                                                                <span className="sr-only">Open menu</span>
+                                                                <MoreHorizontal className="h-4 w-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem onSelect={() => setTimeout(() => setViewTarget(emp), 50)} className="cursor-pointer">
+                                                                <Eye className="mr-2 h-4 w-4 text-zinc-500" />
+                                                                View
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onSelect={() => setTimeout(() => openEdit(emp), 50)} className="cursor-pointer">
+                                                                <Pencil className="mr-2 h-4 w-4 text-zinc-500" />
+                                                                Edit
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onSelect={() => setTimeout(() => setStatusTarget(emp), 50)} className="cursor-pointer">
+                                                                {emp.status === "active" ? (
+                                                                    <>
+                                                                        <Ban className="mr-2 h-4 w-4 text-amber-600" />
+                                                                        Deactivate
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <RotateCcw className="mr-2 h-4 w-4 text-emerald-600" />
+                                                                        Reactivate
+                                                                    </>
+                                                                )}
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onSelect={() => setTimeout(() => setDeleteTarget(emp), 50)} className="text-red-600 focus:text-red-600 cursor-pointer">
+                                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                                Delete
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
                                                 </div>
                                             </td>
                                         </tr>
@@ -358,17 +450,15 @@ export default function Adminemployeepage() {
                             </tbody>
                         </table>
                     </div>
-
                 </div>
 
-                <div className="flex justify-between items-center gap-2 px-2 py-2">
+                <div className="flex justify-between items-center gap-2 px-4 py-3 border-t">
                     <Pagination
                         currentPage={page}
                         totalItems={totalItems}
                         itemsPerPage={perPage}
                         onPageChange={setPage}
                     />
-
                     <PerPageSelect value={perPage} onChange={handlePerPageChange} />
                 </div>
             </div>
@@ -384,10 +474,6 @@ export default function Adminemployeepage() {
                     </DialogHeader>
                     {viewTarget && (
                         <div className="grid grid-cols-2 gap-3 text-sm">
-                            {/* <div>
-                <div className="text-xs text-zinc-400">Department</div>
-                <div className="text-zinc-800">{viewTarget.department}</div>
-              </div> */}
                             <div>
                                 <div className="text-xs text-zinc-400">Address</div>
                                 <div className="text-zinc-800">{viewTarget.adress}</div>
@@ -436,14 +522,6 @@ export default function Adminemployeepage() {
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
-                            {/* <div className="grid gap-1.5">
-                <Label htmlFor="department">Department</Label>
-                <Input
-                  id="department"
-                  value={editDraft.department}
-                  onChange={(e) => setEditDraft((d) => ({ ...d, department: e.target.value }))}
-                />
-              </div> */}
                             <div className="grid gap-1.5">
                                 <Label htmlFor="role">Address</Label>
                                 <Input
@@ -507,8 +585,8 @@ export default function Adminemployeepage() {
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={confirmStatusToggle} disabled={toggleMutation.isPending}>
-                            {toggleMutation.isPending 
-                                ? "Processing..." 
+                            {toggleMutation.isPending
+                                ? "Processing..."
                                 : statusTarget?.status === "active" ? "Deactivate" : "Reactivate"}
                         </AlertDialogAction>
                     </AlertDialogFooter>
