@@ -32,9 +32,8 @@ const ADMIN_NAV: NavItem[] = [
 ];
 
 const EMPLOYEE_NAV: NavItem[] = [
-  { label: "Dashboard", href: "/employee/dashboard", icon: LayoutDashboard },
-  { label: "Upload", href: "/employee/upload", icon: UploadCloud },
-  { label: "My Records", href: "/employee/records", icon: FolderOpenDot },
+  { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+  { label: "Templates", href: "/admin/templates", icon: FileStack },
   { label: "Profile", href: "/employee/profile", icon: UserCircle },
 ];
 
@@ -43,7 +42,7 @@ export function Sidebar({ role }: { role: Role }) {
   const items = role === "admin" ? ADMIN_NAV : EMPLOYEE_NAV;
 
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border  border-[#e7e9f6]! bg-[#fff] md:flex  mt-1 mb-1 ml-1 mr-0 rounded-sm">
+    <aside className="hidden w-64 shrink-0 flex-col border border-[#e7e9f6]! bg-[#fff] md:flex mt-1 mb-1 ml-1 mr-0 rounded-sm sticky top-1 h-[calc(100vh-8px)] overflow-y-auto">
       <div className="flex h-16 items-center px-4">
         {/* <Logo /> */}
       </div>

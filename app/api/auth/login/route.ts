@@ -23,7 +23,7 @@ export async function POST(req: Request) {
       cookieStore.set("role", data.role);
       cookieStore.set("user", JSON.stringify(data.user));
       // Also set the "session" cookie for lib/auth.ts (requireRole)
-      cookieStore.set("session", JSON.stringify({ user: data.user, accessToken: data.token }));
+      cookieStore.set("session", JSON.stringify({ user: { ...data.user, role: data.role }, accessToken: data.token }));
     }
 
     return NextResponse.json(data, {

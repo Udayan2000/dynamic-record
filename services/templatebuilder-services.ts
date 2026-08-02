@@ -7,8 +7,46 @@ export const templatesApi = {
       .post<ApiResponse<Template>>("/templates", payload)
       .then((res) => res.data),
 
-  getTemplates: () =>
+  getTemplates: (params?: { search?: string; page?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.search) query.append("search", params.search);
+    if (params?.page) query.append("page", String(params.page));
+    if (params?.limit) query.append("limit", String(params.limit));
+    
+    return apiClient
+      .get<{ templates: any[], totalItems: number, currentPage: number, totalPages: number }>(`/templates?${query.toString()}`)
+      .then((res) => res.data);
+  },
+
+  getTemplateById: (id: string) =>
     apiClient
-      .get<{ templates: any[] }>("/templates")
-      .then((res) => res.data.templates),
+      .get<{ template: Template }>(`/templates/${id}`)
+      .then((res) => res.data.template),
+
+  deleteTemplate: (id: string) =>
+    apiClient
+      .delete(`/templates/${id}`)
+      .then((res) => res.data),
+
+  updateTemplate: (id: string, payload: CreateTemplatePayload) =>
+    apiClient
+      .put<ApiResponse<Template>>(`/templates/${id}`, payload)
+      .then((res) => res.data),
+
+  toggleTemplateStatus: ({ id, status }: { id: string; status: string }) =>
+    apiClient
+      .patch(`/templates/${id}/status`, { status })
+      .then((res) => res.data),
+};
+
+export const recordsApi = {
+  createRecord: (payload: { templateId: string; data: any }) =>
+    apiClient
+      .post("/records", payload)
+      .then((res) => res.data),
+
+  getRecords: () =>
+    apiClient
+      .get<{ records: any[] }>("/records")
+      .then((res) => res.data.records),
 };

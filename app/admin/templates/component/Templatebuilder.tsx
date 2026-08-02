@@ -45,6 +45,8 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 // import { templatesApi } from "@/services/auth-services"; 
 import {
   CreateTemplatePayload,
@@ -321,8 +323,9 @@ function FieldPreview({ field }: { field: TemplateField }) {
 // Main page
 // ---------------------------------------------------------------------------
 
-export default function TemplateBuilderPage() {
+export default function TemplateBuilderPage({ templateId }: { templateId?: string }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   // Template meta
   const [templateName, setTemplateName] = useState("Untitled template");
@@ -356,8 +359,29 @@ export default function TemplateBuilderPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
 
   const selectedTypeConfig = FIELD_TYPES.find((t) => t.value === draft.type)!;
+
+  useEffect(() => {
+    if (templateId) {
+      setIsFetching(true);
+      templatesApi.getTemplateById(templateId).then((data) => {
+        if (data) {
+          setTemplateName(data.name || "Untitled template");
+          setStatus(data.status as TemplateStatus || "active");
+          setImage(data.image || null);
+          setImageHeight(data.imageHeight || 220);
+          setAccessUsers(data.access || []);
+          setFields(data.fields || []);
+        }
+      }).catch(err => {
+         console.error("Failed to load template", err);
+      }).finally(() => {
+         setIsFetching(false);
+      });
+    }
+  }, [templateId]);
 
   function openAddField() {
     setEditingFieldId(null);
@@ -440,11 +464,18 @@ export default function TemplateBuilderPage() {
 
     setIsSaving(true);
     try {
-      const res = await templatesApi.template(payload);
-      if (!res.success) {
-        throw new Error(res.message || "Failed to save template");
+      let res;
+      if (templateId) {
+        res = await templatesApi.updateTemplate(templateId, payload);
+      } else {
+        res = await templatesApi.template(payload);
+      }
+      
+      if (res && res.error) {
+        throw new Error(res.error);
       }
       setSaveSuccess(true);
+      queryClient.invalidateQueries({ queryKey: ["templates"] });
       router.refresh();
       // brief pause so the success state is visible before navigating away
       setTimeout(() => router.push('/admin/templates'), 500);
@@ -458,6 +489,11 @@ export default function TemplateBuilderPage() {
   return (
     <div>
       <div className="w-full bg-[#fff] border border-[#f1f5fe]! rounded-sm px-2 pt-2 pb-2">
+        {isFetching && (
+          <div className="absolute inset-0 bg-white/50 z-50 flex items-center justify-center backdrop-blur-sm">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        )}
         {/* Top action bar --------------------------------------------------- */}
         <div className="mb-3 flex flex-col gap-3 rounded-sm border border-[#f1f5fe] bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
@@ -771,9 +807,21 @@ export default function TemplateBuilderPage() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-red-600 hover:bg-red-700"
-              onClick={() => {
+              onClick={async () => {
+                if (templateId) {
+                  try {
+                    await templatesApi.deleteTemplate(templateId);
+                    toast.success("Template deleted successfully");
+                    queryClient.invalidateQueries({ queryKey: ["templates"] });
+                    router.push('/admin/templates');
+                    router.refresh();
+                  } catch (err: any) {
+                    toast.error(err.message || "Failed to delete template");
+                  }
+                } else {
+                  router.back();
+                }
                 setShowDeleteTemplate(false);
-                router.back();
               }}
             >
               Delete
@@ -798,8 +846,20 @@ export default function TemplateBuilderPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                setStatus((s) => (s === "active" ? "inactive" : "active"));
+              onClick={async () => {
+                if (templateId) {
+                  try {
+                    const newStatus = status === "active" ? "inactive" : "active";
+                    await templatesApi.toggleTemplateStatus({ id: templateId, status: newStatus });
+                    toast.success("Template status updated");
+                    queryClient.invalidateQueries({ queryKey: ["templates"] });
+                    setStatus(newStatus);
+                  } catch (err: any) {
+                    toast.error(err.message || "Failed to update status");
+                  }
+                } else {
+                  setStatus((s) => (s === "active" ? "inactive" : "active"));
+                }
                 setShowStatusConfirm(false);
               }}
             >
