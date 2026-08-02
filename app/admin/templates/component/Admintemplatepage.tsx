@@ -73,12 +73,15 @@ export default function Admintemplatepage() {
                                             <CardTitle className="text-base font-medium truncate pr-2 group-hover:text-primary transition-colors">
                                                 {template.name || "Untitled Template"}
                                             </CardTitle>
-                                            <Badge variant={template.status === 'active' ? 'default' : 'secondary'} className="text-[10px]">
+                                            <Badge variant={template.status === 'active' ? 'default' : 'secondary'} className="text-[10px] py-1 px-2 rounded-sm">
                                                 {template.status}
                                             </Badge>
                                         </div>
-                                        <CardDescription className="text-xs mt-1">
+                                        <CardDescription className="text-xs mt-1 flex justify-between items-center">
                                             {template.fields?.length || 0} Fields • {template.access?.length || 0} Access
+                                            <Button variant="default" size="sm" className="text-sm ">
+                                                Upload
+                                            </Button>
                                         </CardDescription>
                                     </CardHeader>
                                 </Card>
