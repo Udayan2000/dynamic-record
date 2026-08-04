@@ -25,14 +25,14 @@ export interface PaginationProps {
 
 export interface PerPageOption {
   label: string;
-  value: number;
+  value: string | number;
 }
 
 export interface PerPageSelectProps {
-  value: number;
-  onChange: (value: number) => void;
+  value: string | number;
+  onChange: (value: string | number) => void;
   /** Options to offer. Default: [10, 25, 50, 100] */
-  options?: number[];
+  options?: (string | number)[];
   label?: string;
   className?: string;
 }
