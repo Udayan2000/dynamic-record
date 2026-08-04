@@ -82,37 +82,35 @@ function uid() {
 // ---------------------------------------------------------------------------
 
 function ImageCaptureField({
+  cameraOpen,
+  onCameraOpenChange,
+  onImageChange,
+  videoRef,
   height,
   onHeightChange,
-  image,
-  onImageChange,
 }: {
+  cameraOpen: boolean;
+  onCameraOpenChange: (open: boolean) => void;
+  onImageChange: (src: string | null) => void;
+  videoRef: React.RefObject<HTMLVideoElement>;
   height: number;
   onHeightChange: (h: number) => void;
-  image: string | null;
-  onImageChange: (src: string | null) => void;
 }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-
-  const [cameraOpen, setCameraOpen] = useState(false);
-  const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
   const [error, setError] = useState<string | null>(null);
 
   function stopCamera() {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
-    setCameraOpen(false);
+    onCameraOpenChange(false);
   }
 
-  async function startCamera(mode: "user" | "environment" = facingMode) {
+  async function startCamera() {
     setError(null);
     stopCamera();
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: mode },
+        video: { facingMode: "environment" },
         audio: false,
       });
       streamRef.current = stream;
@@ -120,55 +118,10 @@ function ImageCaptureField({
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
-      setCameraOpen(true);
+      onCameraOpenChange(true);
     } catch {
       setError("Camera access was denied or isn't available on this device.");
     }
-  }
-
-  function flipCamera() {
-    const next = facingMode === "user" ? "environment" : "user";
-    setFacingMode(next);
-    startCamera(next);
-  }
-
-  function capturePhoto() {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.drawImage(video, 0, 0);
-    onImageChange(canvas.toDataURL("image/png"));
-    stopCamera();
-  }
-
-  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => onImageChange(reader.result as string);
-    reader.readAsDataURL(file);
-    e.target.value = "";
-  }
-
-  function rotateImage() {
-    if (!image) return;
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.height;
-      canvas.height = img.width;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate(Math.PI / 2);
-      ctx.drawImage(img, -img.width / 2, -img.height / 2);
-      onImageChange(canvas.toDataURL("image/png"));
-    };
-    img.src = image;
   }
 
   function onDragStart(e: React.PointerEvent) {
@@ -195,27 +148,36 @@ function ImageCaptureField({
 
   return (
     <div className="rounded-sm border border-[#f1f5fe] bg-white p-3">
-      <Label className="text-sm font-semibold text-zinc-800">Profile / upload image</Label>
+      <div className="flex items-center justify-between mb-1">
+        <Label className="text-sm font-semibold text-zinc-800">Profile / upload image</Label>
+        {!cameraOpen ? (
+          <Button type="button" size="sm" onClick={startCamera}>
+            <Plus className="mr-1.5 h-3.5 w-3.5" /> Add
+          </Button>
+        ) : (
+          <Button type="button" variant="outline" size="sm" onClick={() => { stopCamera(); onImageChange(null); }}>
+            <Trash2 className="mr-1.5 h-3.5 w-3.5 text-red-500" /> Delete
+          </Button>
+        )}
+      </div>
       <p className="mb-2 mt-0.5 text-xs text-zinc-400">
-        Always available — capture from a webcam or phone camera (front or back), or upload a
-        file from your computer or phone. Drag the handle below to resize the preview.
+        Always available — capture from a webcam or phone camera (front or back). Drag the handle below to set camera height.
       </p>
 
       <div
         style={{ height }}
-        className="relative w-full overflow-hidden rounded-md border border-dashed border-[#c7d7fe] bg-[#fafbff]"
+        className="relative mt-2 w-full overflow-hidden rounded-md border border-dashed border-[#c7d7fe] bg-[#fafbff]"
       >
-        {cameraOpen ? (
-          <video ref={videoRef} className="h-full w-full object-cover" playsInline muted />
-        ) : image ? (
-          <img src={image} alt="Preview" className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-2 text-zinc-400">
-            <Camera className="h-8 w-8" />
-            <p className="text-xs">No image yet</p>
-          </div>
-        )}
-
+        <div className="flex h-full flex-col items-center justify-center gap-2 text-zinc-400">
+          {!cameraOpen ? (
+            <>
+              <Camera className="h-8 w-8" />
+              <p className="text-xs">Camera area (resize to set height)</p>
+            </>
+          ) : (
+            <p className="text-xs">Camera is live in preview section</p>
+          )}
+        </div>
         <div
           onPointerDown={onDragStart}
           className="absolute bottom-0 left-1/2 flex h-5 w-16 -translate-x-1/2 cursor-ns-resize items-center justify-center rounded-t-md border border-b-0 border-[#c7d7fe] bg-white/90"
@@ -226,51 +188,6 @@ function ImageCaptureField({
       </div>
 
       {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
-
-      <div className="mt-2.5 flex flex-wrap gap-2">
-        {!cameraOpen ? (
-          <Button type="button" variant="outline" size="sm" onClick={() => startCamera()}>
-            <Camera className="mr-1.5 h-3.5 w-3.5" /> Use camera
-          </Button>
-        ) : (
-          <>
-            <Button type="button" size="sm" onClick={capturePhoto}>
-              Capture
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={flipCamera}>
-              <RotateCw className="mr-1.5 h-3.5 w-3.5" /> Flip camera
-            </Button>
-            <Button type="button" variant="ghost" size="sm" onClick={stopCamera}>
-              Cancel
-            </Button>
-          </>
-        )}
-
-        <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-          <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload photo
-        </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={handleFileUpload}
-          className="hidden"
-        />
-
-        {image && (
-          <>
-            <Button type="button" variant="outline" size="sm" onClick={rotateImage}>
-              <RotateCw className="mr-1.5 h-3.5 w-3.5" /> Rotate
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => onImageChange(null)}>
-              <Trash2 className="mr-1.5 h-3.5 w-3.5 text-red-500" /> Delete
-            </Button>
-          </>
-        )}
-      </div>
-
-      <canvas ref={canvasRef} className="hidden" />
     </div>
   );
 }
@@ -334,6 +251,9 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
   // Image field config
   const [imageHeight, setImageHeight] = useState(220);
   const [image, setImage] = useState<string | null>(null);
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   // Access control
   const [accessUsers, setAccessUsers] = useState<TemplateAccess[]>([]);
@@ -372,6 +292,7 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
           setStatus(data.status as TemplateStatus || "active");
           setImage(data.image || null);
           setImageHeight(data.imageHeight || 220);
+          setCameraOpen(data.cameraAccess || false);
           setAccessUsers(data.access || []);
           setFields(data.fields || []);
         }
@@ -458,6 +379,7 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
       status,
       image: image || "",
       imageHeight,
+      cameraAccess: cameraOpen,
       access: accessUsers,
       fields,
     };
@@ -544,10 +466,12 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
           {/* Left / main column --------------------------------------------- */}
           <div className="flex flex-col gap-3 lg:col-span-2">
             <ImageCaptureField
+              cameraOpen={cameraOpen}
+              onCameraOpenChange={setCameraOpen}
+              onImageChange={setImage}
+              videoRef={videoRef}
               height={imageHeight}
               onHeightChange={setImageHeight}
-              image={image}
-              onImageChange={setImage}
             />
 
             {/* Custom field builder */}
@@ -608,11 +532,20 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
             <div className="rounded-sm border border-[#f1f5fe] bg-white p-3">
               <h3 className="mb-2 text-sm font-semibold text-zinc-800">Live preview</h3>
               <div className="flex flex-col gap-3">
+                {cameraOpen && (
+                  <video
+                    ref={videoRef}
+                    style={{ height: imageHeight }}
+                    className="w-full rounded-md object-cover"
+                    playsInline
+                    muted
+                  />
+                )}
                 {image && (
                   <img
                     src={image}
                     alt="Template preview"
-                    style={{ height: Math.min(imageHeight, 220) }}
+                    style={{ height: imageHeight }}
                     className="w-full rounded-md object-cover"
                   />
                 )}

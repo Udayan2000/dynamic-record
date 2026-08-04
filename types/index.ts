@@ -76,6 +76,7 @@ export interface CreateTemplatePayload {
   status: string;
   image: string;
   imageHeight: number;
+  cameraAccess?: boolean;
   access: TemplateAccess[];
   fields: TemplateField[];
 }
@@ -86,6 +87,7 @@ export interface Template {
   status: string;
   image: string;
   imageHeight: number;
+  cameraAccess?: boolean;
   access: TemplateAccess[];
   fields: TemplateField[];
   createdAt: string;

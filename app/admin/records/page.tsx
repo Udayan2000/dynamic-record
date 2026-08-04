@@ -63,7 +63,7 @@ export default function RecordsPage() {
             <thead className="bg-[#fafbff] text-xs uppercase text-zinc-500 border-b border-[#f1f5fe]">
               <tr>
                 <th scope="col" className="px-6 py-4 font-medium">Template</th>
-                <th scope="col" className="px-6 py-4 font-medium">Submitted By</th>
+                <th scope="col" className="px-6 py-4 font-medium">Recored</th>
                 <th scope="col" className="px-6 py-4 font-medium">Date</th>
                 <th scope="col" className="px-6 py-4 font-medium text-right">Action</th>
               </tr>

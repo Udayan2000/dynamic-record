@@ -10,9 +10,159 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Loader2, Save } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Camera, RotateCw, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import React from "react";
+
+function UserImageCapture({
+  image,
+  onImageChange
+}: {
+  image: string | null;
+  onImageChange: (src: string | null) => void;
+}) {
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const streamRef = React.useRef<MediaStream | null>(null);
+
+  const [cameraOpen, setCameraOpen] = React.useState(false);
+  const [facingMode, setFacingMode] = React.useState<"user" | "environment">("environment");
+  const [error, setError] = React.useState<string | null>(null);
+
+  function stopCamera() {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    setCameraOpen(false);
+  }
+
+  async function startCamera(mode: "user" | "environment" = facingMode) {
+    setError(null);
+    stopCamera();
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: mode },
+        audio: false,
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      setCameraOpen(true);
+    } catch {
+      setError("Camera access was denied or isn't available on this device.");
+    }
+  }
+
+  function flipCamera() {
+    const next = facingMode === "user" ? "environment" : "user";
+    setFacingMode(next);
+    startCamera(next);
+  }
+
+  function capturePhoto() {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0);
+    onImageChange(canvas.toDataURL("image/png"));
+    stopCamera();
+  }
+
+  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => onImageChange(reader.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
+
+  function rotateImage() {
+    if (!image) return;
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.height;
+      canvas.height = img.width;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(Math.PI / 2);
+      ctx.drawImage(img, -img.width / 2, -img.height / 2);
+      onImageChange(canvas.toDataURL("image/png"));
+    };
+    img.src = image;
+  }
+
+  React.useEffect(() => () => stopCamera(), []);
+
+  return (
+    <div className="space-y-3 rounded-md border border-zinc-200 p-4 bg-zinc-50/50">
+      <Label className="text-sm font-medium">Capture or Upload Photo</Label>
+      
+      {(cameraOpen || image) && (
+        <div className="relative overflow-hidden rounded-md border bg-zinc-50" style={{ height: 300 }}>
+          {cameraOpen ? (
+            <video ref={videoRef} className="h-full w-full object-cover" playsInline muted />
+          ) : image ? (
+            <img src={image} alt="Captured" className="h-full w-full object-cover" />
+          ) : null}
+        </div>
+      )}
+
+      {error && <p className="text-xs text-red-500">{error}</p>}
+
+      <div className="flex flex-wrap gap-2">
+        {!cameraOpen ? (
+          <>
+            <Button type="button" variant="outline" size="sm" onClick={() => startCamera()}>
+              <Camera className="mr-1.5 h-3.5 w-3.5" /> Use Camera
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+              <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload Photo
+            </Button>
+            {image && (
+              <>
+                <Button type="button" variant="outline" size="sm" onClick={rotateImage}>
+                  <RotateCw className="mr-1.5 h-3.5 w-3.5" /> Rotate
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => onImageChange(null)}>
+                  <Trash2 className="mr-1.5 h-3.5 w-3.5 text-red-500" /> Delete
+                </Button>
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            <Button type="button" size="sm" onClick={capturePhoto}>
+              Capture
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={flipCamera}>
+              <RotateCw className="mr-1.5 h-3.5 w-3.5" /> Flip Camera
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={stopCamera}>
+              Cancel
+            </Button>
+          </>
+        )}
+      </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileUpload}
+        className="hidden"
+      />
+      <canvas ref={canvasRef} className="hidden" />
+    </div>
+  );
+}
 
 export default function TemplateUploadPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -104,6 +254,10 @@ export default function TemplateUploadPage({ params }: { params: Promise<{ id: s
       submissionData[field.label] = formData[fieldId] || (field.type === 'multiselect' ? [] : "");
     });
 
+    if (template.cameraAccess && formData.userImage) {
+      submissionData['Attached Photo'] = formData.userImage;
+    }
+
     mutation.mutate(submissionData);
   };
 
@@ -133,7 +287,7 @@ export default function TemplateUploadPage({ params }: { params: Promise<{ id: s
       </div>
 
       <Card className="border-0 shadow-sm overflow-hidden">
-        {template.image && (
+        {template.image && template.image !== "CAMERA_ENABLED" && (
           <div 
             className="w-full bg-muted" 
             style={{ height: template.imageHeight || 220 }}
@@ -147,6 +301,13 @@ export default function TemplateUploadPage({ params }: { params: Promise<{ id: s
         )}
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {(template.cameraAccess || template.image === "CAMERA_ENABLED") && (
+              <UserImageCapture 
+                image={formData.userImage || null} 
+                onImageChange={(img) => handleInputChange("userImage", img)} 
+              />
+            )}
+            
             {template.fields.map((field: any) => {
               const fieldId = field._id || field.id;
               return (
