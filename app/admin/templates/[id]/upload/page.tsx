@@ -301,7 +301,7 @@ export default function TemplateUploadPage({ params }: { params: Promise<{ id: s
         )}
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {(template.cameraAccess || template.image === "CAMERA_ENABLED") && (
+            {template.cameraAccess && (
               <UserImageCapture 
                 image={formData.userImage || null} 
                 onImageChange={(img) => handleInputChange("userImage", img)} 

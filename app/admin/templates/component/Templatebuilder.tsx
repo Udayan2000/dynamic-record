@@ -259,6 +259,7 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
   const [accessUsers, setAccessUsers] = useState<TemplateAccess[]>([]);
   const [accessName, setAccessName] = useState("");
   const [accessEmail, setAccessEmail] = useState("");
+  const [allowCameraUploads, setAllowCameraUploads] = useState(false);
 
   // Custom fields
   const [fields, setFields] = useState<TemplateField[]>([]);
@@ -292,7 +293,7 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
           setStatus(data.status as TemplateStatus || "active");
           setImage(data.image || null);
           setImageHeight(data.imageHeight || 220);
-          setCameraOpen(data.cameraAccess || false);
+          setAllowCameraUploads(data.cameraAccess || false);
           setAccessUsers(data.access || []);
           setFields(data.fields || []);
         }
@@ -375,11 +376,11 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
     }
 
     const payload: CreateTemplatePayload = {
-      name: templateName.trim(),
+      name: templateName,
       status,
       image: image || "",
       imageHeight,
-      cameraAccess: cameraOpen,
+      cameraAccess: allowCameraUploads,
       access: accessUsers,
       fields,
     };
@@ -398,6 +399,9 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
       }
       setSaveSuccess(true);
       queryClient.invalidateQueries({ queryKey: ["templates"] });
+      if (templateId) {
+        queryClient.invalidateQueries({ queryKey: ["template", templateId] });
+      }
       router.refresh();
       // brief pause so the success state is visible before navigating away
       setTimeout(() => router.push('/admin/templates'), 500);
@@ -527,8 +531,26 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
             </div>
           </div>
 
-          {/* Right column: live preview + access control --------------------- */}
+          {/* Right column: live preview + access control + camera settings --------------------- */}
           <div className="flex flex-col gap-3">
+            <div className="rounded-sm border border-[#f1f5fe] bg-white p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h3 className="text-sm font-semibold text-zinc-800">Enable Camera / Photo Upload</h3>
+                  <p className="text-xs text-zinc-400 mt-0.5">Allow users to attach a photo when submitting a record</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer"
+                    checked={allowCameraUploads}
+                    onChange={(e) => setAllowCameraUploads(e.target.checked)}
+                  />
+                  <div className="w-9 h-5 bg-zinc-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+              </div>
+            </div>
+
             <div className="rounded-sm border border-[#f1f5fe] bg-white p-3">
               <h3 className="mb-2 text-sm font-semibold text-zinc-800">Live preview</h3>
               <div className="flex flex-col gap-3">
