@@ -27,9 +27,16 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
   const token = cookieStore.get("access_token")?.value;
+  
+  // Forward query params
+  const { searchParams } = new URL(req.url);
+  const queryString = searchParams.toString();
+  const url = queryString 
+    ? `${process.env.NEXT_PUBLIC_BASE_URL}/records?${queryString}`
+    : `${process.env.NEXT_PUBLIC_BASE_URL}/records`;
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/records`, {
+    const response = await fetch(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

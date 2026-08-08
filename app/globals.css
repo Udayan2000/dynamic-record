@@ -97,3 +97,13 @@ body {
   color: hsl(var(--foreground));
   font-feature-settings: "cv11", "ss01";
 }
+
+html.theme-dark {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+html.theme-dark img,
+html.theme-dark canvas,
+html.theme-dark video {
+  filter: invert(1) hue-rotate(180deg);
+}

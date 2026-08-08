@@ -1,6 +1,7 @@
 "use client";
 
-import { LogOut, User as UserIcon } from "lucide-react";
+import { useState, useEffect } from "react";
+import { LogOut, User as UserIcon, Sun, Moon } from "lucide-react";
 // import {
 //   DropdownMenu,
 //   DropdownMenuContent,
@@ -15,12 +16,36 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 
 export function Topbar({ user, title }: { user: User; title?: string }) {
   const logout = useLogout();
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    // Check initial state
+    if (document.documentElement.classList.contains("theme-dark")) {
+      setIsDark(true);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    if (isDark) {
+      document.documentElement.classList.remove("theme-dark");
+      setIsDark(false);
+    } else {
+      document.documentElement.classList.add("theme-dark");
+      setIsDark(true);
+    }
+  };
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-border px-5 bg-[#fff] border-b border-[#f1f5fe]! mt-1 mb-1 ml-1 mr-1 rounded-sm">
       <h1 className="font-display text-lg font-semibold">{title}</h1>
       <div className="flex items-center gap-3">
-        {/* <ThemeToggle /> */}
+        <button 
+          onClick={toggleTheme}
+          className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted text-zinc-600 transition-colors"
+          aria-label="Toggle theme"
+        >
+          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </button>
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -34,7 +59,7 @@ export function Topbar({ user, title }: { user: User; title?: string }) {
           <DropdownMenuContent align="end">
             <DropdownMenuItem disabled>{user.email}</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => logout.mutate()} className="text-destructive">
+            <DropdownMenuItem onClick={() => logout.mutate()} className="text-destructive cursor-pointer">
               <LogOut className="mr-2 h-4 w-4" />
               Log out
             </DropdownMenuItem>

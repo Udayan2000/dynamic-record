@@ -45,8 +45,15 @@ export const recordsApi = {
       .post("/records", payload)
       .then((res) => res.data),
 
-  getRecords: () =>
-    apiClient
-      .get<{ records: any[] }>("/records")
-      .then((res) => res.data.records),
+  getRecords: (params?: { templateId?: string; search?: string; page?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.templateId) query.append("templateId", params.templateId);
+    if (params?.search) query.append("search", params.search);
+    if (params?.page) query.append("page", String(params.page));
+    if (params?.limit) query.append("limit", String(params.limit));
+
+    return apiClient
+      .get<{ records: any[], totalItems: number, currentPage: number, totalPages: number }>(`/records?${query.toString()}`)
+      .then((res) => res.data);
+  }
 };

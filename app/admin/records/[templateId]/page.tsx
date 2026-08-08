@@ -14,17 +14,34 @@ import {
   Search, 
   Download, 
   Image as ImageIcon,
-  Calendar
+  Calendar,
+  CloudDownload
 } from "lucide-react";
 import React from "react";
+import { toast } from "sonner";
+import { useDebounce } from "@/hooks/use-debounce";
+import { Pagination } from "@/components/ui/pagination";
+import { useAuthStore } from "@/store/auth-store";
 
 export default function TemplateRecordsPage({ params }: { params: Promise<{ templateId: string }> }) {
   const router = useRouter();
+  const { user } = useAuthStore();
   const [templateId, setTemplateId] = useState<string | null>(null);
 
   useEffect(() => {
     params.then((p) => setTemplateId(p.templateId));
   }, [params]);
+
+  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery, 500);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
 
   const { data: template, isLoading: isLoadingTemplate } = useQuery<Template>({
     queryKey: ["template", templateId],
@@ -32,89 +49,116 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
     enabled: !!templateId,
   });
 
-  const { data: records = [], isLoading: isLoadingRecords } = useQuery({
-    queryKey: ["records"],
-    queryFn: recordsApi.getRecords,
+  const { data: recordsData, isLoading: isLoadingRecords } = useQuery({
+    queryKey: ["records", templateId, page, debouncedSearch],
+    queryFn: () => recordsApi.getRecords({ templateId: templateId as string, search: debouncedSearch, page, limit: 10 }),
+    enabled: !!templateId,
   });
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-
   const isLoading = isLoadingTemplate || isLoadingRecords;
+  const filteredRecords = recordsData?.records || [];
+  const totalItems = recordsData?.totalItems || 0;
 
-  const templateRecords = useMemo(() => {
-    if (!templateId || !records.length) return [];
-    return records.filter((r: any) => 
-      r.templateId?._id === templateId || r.templateId === templateId
-    );
-  }, [records, templateId]);
+  const handleExportCSV = async () => {
+    if (!template) return;
 
-  const filteredRecords = useMemo(() => {
-    if (!searchQuery.trim()) return templateRecords;
-    const lowerQuery = searchQuery.toLowerCase();
-    
-    return templateRecords.filter((record: any) => {
-      // Search in submitter info
-      if (record.submitterName?.toLowerCase().includes(lowerQuery)) return true;
-      if (record.submitterEmail?.toLowerCase().includes(lowerQuery)) return true;
-      
-      // Search in data values
-      if (record.data) {
-        return Object.values(record.data).some((value: any) => {
-          if (typeof value === "string") return value.toLowerCase().includes(lowerQuery);
-          if (Array.isArray(value)) return value.join(" ").toLowerCase().includes(lowerQuery);
-          return false;
-        });
+    toast.loading("Preparing CSV...", { id: "csv-export" });
+    try {
+      const exportData = await recordsApi.getRecords({ templateId: templateId as string, search: debouncedSearch, limit: 10000 });
+      const recordsToExport = exportData.records;
+
+      if (recordsToExport.length === 0) {
+        toast.dismiss("csv-export");
+        toast.error("No records to export.");
+        return;
       }
-      return false;
-    });
-  }, [templateRecords, searchQuery]);
 
-  const handleExportCSV = () => {
-    if (!template || filteredRecords.length === 0) return;
+      // Define standard headers
+      const headers = ["Submitted By", "Email", "Date Submitted"];
+      
+      // Add dynamic field headers
+      template.fields.forEach((f) => headers.push(f.label));
+      if (template.cameraAccess) headers.push("Attached Photo");
 
-    // Define standard headers
-    const headers = ["Submitted By", "Email", "Date Submitted"];
-    
-    // Add dynamic field headers
-    template.fields.forEach((f) => headers.push(f.label));
-    if (template.cameraAccess) headers.push("Attached Photo");
+      // Map rows
+      const rows = recordsToExport.map((record: any) => {
+        const rowData = [
+          `"${record.submitterName || ""}"`,
+          `"${record.submitterEmail || ""}"`,
+          `"${new Date(record.createdAt).toLocaleString()}"`,
+        ];
 
-    // Map rows
-    const rows = filteredRecords.map((record: any) => {
-      const rowData = [
-        `"${record.submitterName || ""}"`,
-        `"${record.submitterEmail || ""}"`,
-        `"${new Date(record.createdAt).toLocaleString()}"`,
-      ];
+        template.fields.forEach((f) => {
+          const val = record.data?.[f.label];
+          if (Array.isArray(val)) {
+            rowData.push(`"${val.join(", ")}"`);
+          } else {
+            rowData.push(`"${val || ""}"`);
+          }
+        });
 
-      template.fields.forEach((f) => {
-        const val = record.data?.[f.label];
-        if (Array.isArray(val)) {
-          rowData.push(`"${val.join(", ")}"`);
-        } else {
-          rowData.push(`"${val || ""}"`);
+        if (template.cameraAccess) {
+          const photo = record.data?.["Attached Photo"];
+          rowData.push(`"${photo ? "Image Attached" : "None"}"`);
         }
+
+        return rowData.join(",");
       });
 
-      if (template.cameraAccess) {
-        const photo = record.data?.["Attached Photo"];
-        rowData.push(`"${photo ? "Image Attached" : "None"}"`);
+      const csvContent = [headers.join(","), ...rows].join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `${template.name}_Records.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("CSV Exported successfully", { id: "csv-export" });
+    } catch (error) {
+      toast.error("Failed to prepare CSV", { id: "csv-export" });
+    }
+  };
+
+  const handleExportDrive = async () => {
+    if (!template) return;
+
+    try {
+      setIsExporting(true);
+      toast.loading("Exporting to Google Drive...", { id: "drive-export" });
+
+      const response = await fetch('/api/drive/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          templateName: template.name,
+          templateId: templateId as string,
+          search: debouncedSearch,
+          fields: template.fields,
+          hasCameraAccess: template.cameraAccess
+        })
+      });
+
+      if (response.status === 401) {
+        toast.dismiss("drive-export");
+        toast.info("Redirecting to Google for authentication...");
+        window.location.href = '/api/auth/google';
+        return;
       }
 
-      return rowData.join(",");
-    });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.details || 'Upload failed');
+      }
 
-    const csvContent = [headers.join(","), ...rows].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `${template.name}_Records.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      toast.success("Successfully exported to Google Drive!", { id: "drive-export" });
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("An error occurred during export", { id: "drive-export" });
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   if (!templateId || isLoading) {
@@ -142,7 +186,7 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-zinc-900 tracking-tight">{template.name}</h1>
-            <p className="text-sm text-zinc-500 mt-1">Viewing all {filteredRecords.length} submissions</p>
+            <p className="text-sm text-zinc-500 mt-1">Viewing {filteredRecords.length} of {totalItems} submissions</p>
           </div>
         </div>
 
@@ -156,9 +200,17 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
               className="pl-9 h-10 w-full"
             />
           </div>
-          <Button onClick={handleExportCSV} variant="outline" className="h-10 shrink-0">
-            <Download className="mr-2 h-4 w-4" /> Export CSV
-          </Button>
+          {user?.role === "admin" && (
+            <>
+              <Button onClick={handleExportDrive} disabled={isExporting} variant="outline" className="h-10 shrink-0 border-violet-200 hover:bg-violet-50 text-violet-600 hover:text-violet-700">
+                {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CloudDownload className="mr-2 h-4 w-4" />} 
+                Drive Export
+              </Button>
+              <Button onClick={handleExportCSV} variant="outline" className="h-10 shrink-0">
+                <Download className="mr-2 h-4 w-4" /> CSV
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -246,6 +298,16 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="mt-4">
+        <Pagination
+          currentPage={page}
+          totalItems={totalItems}
+          itemsPerPage={10}
+          onPageChange={setPage}
+          showSummary={true}
+        />
       </div>
 
       {/* Full Image View Dialog */}
