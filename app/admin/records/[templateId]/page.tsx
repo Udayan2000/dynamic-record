@@ -178,7 +178,7 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
   }
 
   return (
-    <div className="flex h-full flex-col p-4 bg-white m-2 rounded-xl shadow-sm border border-zinc-100 min-h-[calc(100vh-64px)]">
+    <div className="w-full bg-[#fff] border border-[#f1f5fe]! rounded-sm px-2 pt-2 pb-2 h-full">
       <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => router.push('/admin/records')} className="shrink-0 text-zinc-500 hover:text-zinc-900">

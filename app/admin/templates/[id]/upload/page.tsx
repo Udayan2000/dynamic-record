@@ -16,10 +16,12 @@ import React from "react";
 
 function UserImageCapture({
   image,
-  onImageChange
+  onImageChange,
+  height,
 }: {
   image: string | null;
   onImageChange: (src: string | null) => void;
+  height: number;
 }) {
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -41,15 +43,21 @@ function UserImageCapture({
     stopCamera();
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: mode },
+        video: { 
+          facingMode: mode,
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        },
         audio: false,
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
       setCameraOpen(true);
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(console.error);
+        }
+      }, 50);
     } catch {
       setError("Camera access was denied or isn't available on this device.");
     }
@@ -104,14 +112,14 @@ function UserImageCapture({
 
   return (
     <div className="space-y-3 rounded-md border border-zinc-200 p-4 bg-zinc-50/50">
-      <Label className="text-sm font-medium">Capture or Upload Photo</Label>
-      
+      <Label className="text-sm font-medium mb-2! block">Capture or Upload Photo</Label>
+
       {(cameraOpen || image) && (
-        <div className="relative overflow-hidden rounded-md border bg-zinc-50" style={{ height: 300 }}>
+        <div className="relative overflow-hidden rounded-md border bg-zinc-50" style={{ height }}>
           {cameraOpen ? (
-            <video ref={videoRef} className="h-full w-full object-cover" playsInline muted />
+            <video ref={videoRef} className="h-full w-full object-contain" playsInline muted />
           ) : image ? (
-            <img src={image} alt="Captured" className="h-full w-full object-cover" />
+            <img src={image} alt="Captured" className="h-full w-full object-contain" />
           ) : null}
         </div>
       )}
@@ -278,118 +286,125 @@ export default function TemplateUploadPage({ params }: { params: Promise<{ id: s
   }
 
   return (
-    <div className="max-w-3xl mx-auto w-full pb-10">
-      <div className="mb-4 flex items-center gap-2 mt-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} title="Back">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <h1 className="text-2xl font-bold">{template.name}</h1>
+    <section className="w-full bg-[#fff] border border-[#f1f5fe]! rounded-sm px-2 pt-2 pb-2">
+      <div className="mb-3 flex flex-col gap-3 rounded-sm border border-[#f1f5fe] bg-white p-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => router.back()} title="Back">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-2xl font-bold">{template.name}</h1>
+        </div>
       </div>
 
-      <Card className="border-0 shadow-sm overflow-hidden">
+      <div className="border-0 overflow-hidden">
         {template.image && template.image !== "CAMERA_ENABLED" && (
-          <div 
-            className="w-full bg-muted" 
+          <div
+            className="w-full bg-muted"
             style={{ height: template.imageHeight || 220 }}
           >
-            <img 
-              src={template.image} 
-              alt={template.name} 
-              className="w-full h-full object-cover" 
+            <img
+              src={template.image}
+              alt={template.name}
+              className="w-full h-full object-cover"
             />
           </div>
         )}
-        <CardContent className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <div className=" W-full">
+          <div className="">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {template.cameraAccess && (
-              <UserImageCapture 
-                image={formData.userImage || null} 
-                onImageChange={(img) => handleInputChange("userImage", img)} 
+              <UserImageCapture
+                image={formData.userImage || null}
+                onImageChange={(img) => handleInputChange("userImage", img)}
+                height={template.imageHeight || 220}
               />
             )}
-            
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 h-[calc(100vh-342px)] overflow-y-auto">
+
             {template.fields.map((field: any) => {
               const fieldId = field._id || field.id;
               return (
-              <div key={fieldId} className="space-y-2">
-                <Label className="text-sm font-medium">
-                  {field.label} {field.required && <span className="text-red-500">*</span>}
-                </Label>
-                
-                {field.type === "text" && (
-                  <Input 
-                    value={formData[fieldId] || ""}
-                    onChange={(e) => handleInputChange(fieldId, e.target.value)}
-                    placeholder={`Enter ${field.label.toLowerCase()}`}
-                    className={errors[fieldId] ? "border-red-500" : ""}
-                  />
-                )}
+                <div key={fieldId} className="space-y-2 ">
+                  <Label className="text-sm font-medium mb-2! block">
+                    {field.label} {field.required && <span className="text-red-500">*</span>}
+                  </Label>
 
-                {field.type === "textarea" && (
-                  <Textarea 
-                    value={formData[fieldId] || ""}
-                    onChange={(e) => handleInputChange(fieldId, e.target.value)}
-                    placeholder={`Enter ${field.label.toLowerCase()}`}
-                    rows={3}
-                    className={errors[fieldId] ? "border-red-500" : ""}
-                  />
-                )}
+                  {field.type === "text" && (
+                    <Input
+                      value={formData[fieldId] || ""}
+                      onChange={(e) => handleInputChange(fieldId, e.target.value)}
+                      placeholder={`Enter ${field.label.toLowerCase()}`}
+                      className={errors[fieldId] ? "ring-0 border-red-500" : ""}
+                    />
+                  )}
 
-                {field.type === "dropdown" && (
-                  <select
-                    value={formData[fieldId] || ""}
-                    onChange={(e) => handleInputChange(fieldId, e.target.value)}
-                    className={`flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${errors[fieldId] ? "border-red-500" : ""}`}
-                  >
-                    <option value="">Select an option</option>
-                    {field.options.map((opt: string, i: number) => (
-                      <option key={i} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                )}
+                  {field.type === "textarea" && (
+                    <Textarea
+                      value={formData[fieldId] || ""}
+                      onChange={(e) => handleInputChange(fieldId, e.target.value)}
+                      placeholder={`Enter ${field.label.toLowerCase()}`}
+                      rows={3}
+                      className={errors[fieldId] ? "border-red-500" : ""}
+                    />
+                  )}
 
-                {field.type === "radio" && (
-                  <div className="flex flex-col gap-2 mt-2">
-                    {field.options.map((opt: string, i: number) => (
-                      <label key={i} className="flex items-center gap-2 text-sm cursor-pointer">
-                        <input 
-                          type="radio" 
-                          name={fieldId} 
-                          value={opt}
-                          checked={formData[fieldId] === opt}
-                          onChange={(e) => handleInputChange(fieldId, e.target.value)}
-                          className="h-4 w-4 text-primary focus:ring-primary" 
-                        /> 
-                        {opt}
-                      </label>
-                    ))}
-                  </div>
-                )}
+                  {field.type === "dropdown" && (
+                    <select
+                      value={formData[fieldId] || ""}
+                      onChange={(e) => handleInputChange(fieldId, e.target.value)}
+                      className={`flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${errors[fieldId] ? "border-red-500" : ""}`}
+                    >
+                      <option value="">Select an option</option>
+                      {field.options.map((opt: string, i: number) => (
+                        <option key={i} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  )}
 
-                {field.type === "multiselect" && (
-                  <div className="flex flex-col gap-2 mt-2">
-                    {field.options.map((opt: string, i: number) => (
-                      <label key={i} className="flex items-center gap-2 text-sm cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          value={opt}
-                          checked={(formData[fieldId] || []).includes(opt)}
-                          onChange={(e) => handleCheckboxChange(fieldId, opt, e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" 
-                        /> 
-                        {opt}
-                      </label>
-                    ))}
-                  </div>
-                )}
-                
-                {errors[fieldId] && (
-                  <p className="text-xs text-red-500 mt-1">{errors[fieldId]}</p>
-                )}
-              </div>
-            )})}
+                  {field.type === "radio" && (
+                    <div className="flex flex-col gap-2 mt-2">
+                      {field.options.map((opt: string, i: number) => (
+                        <label key={i} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <input
+                            type="radio"
+                            name={fieldId}
+                            value={opt}
+                            checked={formData[fieldId] === opt}
+                            onChange={(e) => handleInputChange(fieldId, e.target.value)}
+                            className="h-4 w-4 text-primary focus:ring-primary"
+                          />
+                          {opt}
+                        </label>
+                      ))}
+                    </div>
+                  )}
 
-            <div className="pt-4 flex justify-end">
+                  {field.type === "multiselect" && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {field.options.map((opt: string, i: number) => (
+                        <label key={i} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <input
+                            type="checkbox"
+                            value={opt}
+                            checked={(formData[fieldId] || []).includes(opt)}
+                            onChange={(e) => handleCheckboxChange(fieldId, opt, e.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                          />
+                          {opt}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+
+                  {errors[fieldId] && (
+                    <p className="text-xs text-red-500 mt-1">{errors[fieldId]}</p>
+                  )}
+                </div>
+              )
+            })}
+            </div>
+
+            <div className=" flex justify-end border-t border-t-[#f1f5fe] pt-2">
               <Button type="submit" disabled={mutation.isPending}>
                 {mutation.isPending ? (
                   <>
@@ -403,8 +418,9 @@ export default function TemplateUploadPage({ params }: { params: Promise<{ id: s
               </Button>
             </div>
           </form>
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
