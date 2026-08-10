@@ -387,7 +387,7 @@ export default function Adminemployeepage() {
                                     employees.map((emp) => (
                                         <tr
                                             key={emp.id}
-                                            className="border-b border-[#f1f5fe] hover:bg-[#fafbff]"
+                                            className="border-b border-[#f1f5fe] hover:bg-[#fafbff] transition-colors"
                                         >
                                             <td className="px-3 py-2.5">
                                                 <div className="font-medium text-zinc-800">{emp.name}</div>
