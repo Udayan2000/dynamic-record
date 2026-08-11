@@ -45,7 +45,7 @@ export default function Admintemplatepage() {
     const templates = responseData?.templates || [];
     const totalItems = responseData?.totalItems || 0;
 
-    const handlePerPageChange = (val: string) => {
+    const handlePerPageChange = (val: string | number) => {
         setPerPage(Number(val));
         setPage(1);
     };

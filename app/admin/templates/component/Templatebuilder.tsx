@@ -94,7 +94,7 @@ function ImageCaptureField({
   cameraOpen: boolean;
   onCameraOpenChange: (open: boolean) => void;
   onImageChange: (src: string | null) => void;
-  videoRef: React.RefObject<HTMLVideoElement>;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
   height: number;
   onHeightChange: (h: number) => void;
   isResizing?: boolean;
@@ -391,7 +391,7 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
 
     setIsSaving(true);
     try {
-      let res;
+      let res: any;
       if (templateId) {
         res = await templatesApi.updateTemplate(templateId, payload);
       } else {
