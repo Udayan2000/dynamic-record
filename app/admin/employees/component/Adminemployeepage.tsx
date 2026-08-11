@@ -275,8 +275,8 @@ export default function Adminemployeepage() {
         }
     });
 
-    const handlePerPageChange = (value: number) => {
-        setPerPage(value);
+    const handlePerPageChange = (value: string | number) => {
+        setPerPage(Number(value));
         setPage(1);
     };
 

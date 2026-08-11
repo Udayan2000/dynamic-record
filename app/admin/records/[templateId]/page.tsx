@@ -370,7 +370,7 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
                                     onPageChange={setPage}
                                      showSummary={true}
                                 />
-                                <PerPageSelect value={10}  />
+                                <PerPageSelect value={10} onChange={() => {}} />
           </div>
 
         </div>
