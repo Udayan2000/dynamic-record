@@ -183,7 +183,12 @@ export default function TemplateUploadPage({ params }: { params: Promise<{ id: s
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const mutation = useMutation({
-    mutationFn: (data: any) => recordsApi.createRecord({ templateId: templateId as string, data }),
+    mutationFn: (data: any) => {
+      if (data instanceof FormData) {
+        return recordsApi.createRecord(data);
+      }
+      return recordsApi.createRecord({ templateId: templateId as string, data });
+    },
     onSuccess: () => {
       toast.success("Record submitted successfully");
       queryClient.invalidateQueries({ queryKey: ["records"] });
@@ -254,11 +259,30 @@ export default function TemplateUploadPage({ params }: { params: Promise<{ id: s
       submissionData[field.label] = formData[fieldId] || (field.type === 'multiselect' ? [] : "");
     });
 
+    let payload: any = submissionData;
+
     if (template.cameraAccess && formData.userImage) {
-      submissionData['Attached Photo'] = formData.userImage;
+      const formPayload = new FormData();
+      formPayload.append("templateId", templateId as string);
+      formPayload.append("data", JSON.stringify(submissionData));
+      
+      const dataUrl = formData.userImage;
+      const arr = dataUrl.split(',');
+      const mimeMatch = arr[0].match(/:(.*?);/);
+      const mime = mimeMatch ? mimeMatch[1] : 'image/png';
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while(n--){
+          u8arr[n] = bstr.charCodeAt(n);
+      }
+      const file = new File([u8arr], "capture.png", { type: mime });
+      
+      formPayload.append("image", file);
+      payload = formPayload;
     }
 
-    mutation.mutate(submissionData);
+    mutation.mutate(payload);
   };
 
   if (!templateId || isLoading) {

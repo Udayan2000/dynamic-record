@@ -4,16 +4,26 @@ import { NextResponse, NextRequest } from "next/server";
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies();
   const token = cookieStore.get("access_token")?.value;
-  const body = await req.json();
+  const contentType = req.headers.get("content-type") || "";
 
   try {
+    let bodyPayload: any;
+    let headers: Record<string, string> = {
+      "Authorization": token ? `Bearer ${token}` : "",
+    };
+
+    if (contentType.includes("multipart/form-data")) {
+      bodyPayload = await req.formData();
+      // fetch will automatically set Content-Type with correct boundary when given FormData
+    } else {
+      bodyPayload = JSON.stringify(await req.json());
+      headers["Content-Type"] = "application/json";
+    }
+
     const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/records`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": token ? `Bearer ${token}` : "",
-      },
-      body: JSON.stringify(body),
+      headers,
+      body: bodyPayload,
     });
 
     const data = await response.json();

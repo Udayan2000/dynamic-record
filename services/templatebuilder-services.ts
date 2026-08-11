@@ -40,9 +40,9 @@ export const templatesApi = {
 };
 
 export const recordsApi = {
-  createRecord: (payload: { templateId: string; data: any }) =>
+  createRecord: (payload: { templateId: string; data: any } | FormData) =>
     apiClient
-      .post("/records", payload)
+      .post("/records", payload, payload instanceof FormData ? { headers: { "Content-Type": "multipart/form-data" } } : undefined)
       .then((res) => res.data),
 
   getRecords: (params?: { templateId?: string; search?: string; page?: number; limit?: number }) => {
