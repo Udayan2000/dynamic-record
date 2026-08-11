@@ -88,6 +88,8 @@ function ImageCaptureField({
   videoRef,
   height,
   onHeightChange,
+  isResizing,
+  onSaveResize,
 }: {
   cameraOpen: boolean;
   onCameraOpenChange: (open: boolean) => void;
@@ -95,6 +97,8 @@ function ImageCaptureField({
   videoRef: React.RefObject<HTMLVideoElement>;
   height: number;
   onHeightChange: (h: number) => void;
+  isResizing?: boolean;
+  onSaveResize?: () => void;
 }) {
   const streamRef = useRef<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -105,24 +109,24 @@ function ImageCaptureField({
     onCameraOpenChange(false);
   }
 
-  async function startCamera() {
-    setError(null);
-    stopCamera();
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-        audio: false,
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      onCameraOpenChange(true);
-    } catch {
-      setError("Camera access was denied or isn't available on this device.");
-    }
-  }
+  // async function startCamera() {
+  //   setError(null);
+  //   stopCamera();
+  //   try {
+  //     const stream = await navigator.mediaDevices.getUserMedia({
+  //       video: { facingMode: "environment" },
+  //       audio: false,
+  //     });
+  //     streamRef.current = stream;
+  //     if (videoRef.current) {
+  //       videoRef.current.srcObject = stream;
+  //       await videoRef.current.play();
+  //     }
+  //     onCameraOpenChange(true);
+  //   } catch {
+  //     setError("Camera access was denied or isn't available on this device.");
+  //   }
+  // }
 
   function onDragStart(e: React.PointerEvent) {
     e.preventDefault();
@@ -150,13 +154,9 @@ function ImageCaptureField({
     <div className="rounded-sm border border-[#f1f5fe] bg-white p-3">
       <div className="flex items-center justify-between mb-1">
         <Label className="text-sm font-semibold text-zinc-800">Profile / upload image</Label>
-        {!cameraOpen ? (
-          <Button type="button" size="sm" onClick={startCamera}>
-            <Plus className="mr-1.5 h-3.5 w-3.5" /> Add
-          </Button>
-        ) : (
-          <Button type="button" variant="outline" size="sm" onClick={() => { stopCamera(); onImageChange(null); }}>
-            <Trash2 className="mr-1.5 h-3.5 w-3.5 text-red-500" /> Delete
+        {isResizing && onSaveResize && (
+          <Button type="button" size="sm" onClick={onSaveResize}>
+            <Save className="mr-1.5 h-3.5 w-3.5" /> Save
           </Button>
         )}
       </div>
@@ -178,13 +178,15 @@ function ImageCaptureField({
             <p className="text-xs">Camera is live in preview section</p>
           )}
         </div>
-        <div
-          onPointerDown={onDragStart}
-          className="absolute bottom-0 left-1/2 flex h-5 w-16 -translate-x-1/2 cursor-ns-resize items-center justify-center rounded-t-md border border-b-0 border-[#c7d7fe] bg-white/90"
-          title="Drag to resize"
-        >
-          <GripHorizontal className="h-3.5 w-3.5 text-zinc-400" />
-        </div>
+        {isResizing && (
+          <div
+            onPointerDown={onDragStart}
+            className="absolute bottom-0 left-1/2 flex h-5 w-16 -translate-x-1/2 cursor-ns-resize items-center justify-center rounded-t-md border border-b-0 border-[#c7d7fe] bg-white/90"
+            title="Drag to resize"
+          >
+            <GripHorizontal className="h-3.5 w-3.5 text-zinc-400" />
+          </div>
+        )}
       </div>
 
       {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
@@ -275,6 +277,8 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
   const [deleteFieldId, setDeleteFieldId] = useState<string | null>(null);
   const [showDeleteTemplate, setShowDeleteTemplate] = useState(false);
   const [showStatusConfirm, setShowStatusConfirm] = useState(false);
+  const [showResizeModal, setShowResizeModal] = useState(false);
+  const [isResizingImage, setIsResizingImage] = useState(false);
 
   // Save state
   const [isSaving, setIsSaving] = useState(false);
@@ -476,6 +480,11 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
               videoRef={videoRef}
               height={imageHeight}
               onHeightChange={setImageHeight}
+              isResizing={isResizingImage}
+              onSaveResize={() => {
+                setIsResizingImage(false);
+                setAllowCameraUploads(true);
+              }}
             />
 
             {/* Custom field builder */}
@@ -544,7 +553,13 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
                     type="checkbox" 
                     className="sr-only peer"
                     checked={allowCameraUploads}
-                    onChange={(e) => setAllowCameraUploads(e.target.checked)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setShowResizeModal(true);
+                      } else {
+                        setAllowCameraUploads(false);
+                      }
+                    }}
                   />
                   <div className="w-9 h-5 bg-zinc-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
                 </label>
@@ -820,6 +835,25 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
             >
               {status === "active" ? "Deactivate" : "Activate"}
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {/* Resize prompt modal -------------------------------------- */}
+      <AlertDialog open={showResizeModal} onOpenChange={setShowResizeModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you resize the Profile / upload image camera section</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setIsResizingImage(false);
+              setAllowCameraUploads(true);
+              setShowResizeModal(false);
+            }}>No resize</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              setIsResizingImage(true);
+              setShowResizeModal(false);
+            }}>Yes</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
