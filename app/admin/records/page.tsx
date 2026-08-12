@@ -23,9 +23,9 @@ export default function RecordsPage() {
 
   const records = recordsData?.records || [];
 
-  const { data: templatesData, isLoading: isLoadingTemplates } = useQuery({
-    queryKey: ["templates", page],
-    queryFn: () => templatesApi.getTemplates({ page, limit: 10 }),
+  const { data: templatesData, isLoading: isLoadingTemplates, isFetching: isFetchingTemplates } = useQuery({
+    queryKey: ["templates", page, debouncedSearch],
+    queryFn: () => templatesApi.getTemplates({ search: debouncedSearch, page, limit: 10 }),
   });
 
   const templates = templatesData?.templates || [];
@@ -70,10 +70,15 @@ export default function RecordsPage() {
               <div className="w-full max-w-[400px]">
                 <Input
                   id="search-template"
-                  type="text"
+                  type="search"
                   placeholder="Search templates..."
+                  isLoading={searchTerm !== debouncedSearch || isFetchingTemplates}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onDebouncedChange={(value) => {
+                    setDebouncedSearch(value);
+                    setPage(1);
+                  }}
                 />
               </div>
               <div>

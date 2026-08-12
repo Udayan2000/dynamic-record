@@ -310,7 +310,7 @@ export default function TemplateUploadPage({ params }: { params: Promise<{ id: s
           </div>
         )}
         <div className=" W-full">
-          <div className="">
+          <div className="h-full">
           <form onSubmit={handleSubmit} className="space-y-4">
             {template.cameraAccess && (
               <UserImageCapture
@@ -319,7 +319,7 @@ export default function TemplateUploadPage({ params }: { params: Promise<{ id: s
                 height={template.imageHeight || 220}
               />
             )}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 h-[calc(100vh-342px)] overflow-y-auto">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 h-[calc(100vh-346px)] overflow-y-auto">
 
             {template.fields.map((field: any) => {
               const fieldId = field._id || field.id;

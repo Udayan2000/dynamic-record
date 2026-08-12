@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import {
   Loader2,
   ArrowLeft,
-  Search,
   Download,
   Image as ImageIcon,
   Calendar,
@@ -19,10 +18,9 @@ import {
 } from "lucide-react";
 import React from "react";
 import { toast } from "sonner";
-import { useDebounce } from "@/hooks/use-debounce";
 import { Pagination, PerPageSelect } from "@/components/ui/pagination";
 import { useAuthStore } from "@/store/auth-store";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card,  CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function TemplateRecordsPage({ params }: { params: Promise<{ templateId: string }> }) {
   const router = useRouter();
@@ -34,29 +32,26 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
   }, [params]);
 
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
-  const debouncedSearch = useDebounce(searchQuery, 500);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
-
-  // Reset to page 1 when search changes
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch]);
-
+  // const [isSearching, setIsSearching] = useState(false);
   const { data: template, isLoading: isLoadingTemplate } = useQuery<Template>({
     queryKey: ["template", templateId],
     queryFn: () => templatesApi.getTemplateById(templateId as string),
     enabled: !!templateId,
   });
 
-  const { data: recordsData, isLoading: isLoadingRecords } = useQuery({
-    queryKey: ["records", templateId, page, debouncedSearch],
-    queryFn: () => recordsApi.getRecords({ templateId: templateId as string, search: debouncedSearch, page, limit: 10 }),
+  const { data: recordsData, isLoading: isLoadingRecords, isFetching: isFetchingRecords } = useQuery({
+    queryKey: ["records", templateId, page, debouncedSearch, perPage],
+    queryFn: () => recordsApi.getRecords({ templateId: templateId as string, search: debouncedSearch, page, limit: perPage }),
     enabled: !!templateId,
   });
 
   const isLoading = isLoadingTemplate || isLoadingRecords;
+  const isSearching = searchQuery !== debouncedSearch || isFetchingRecords;
   const filteredRecords = recordsData?.records || [];
   const totalItems = recordsData?.totalItems || 0;
 
@@ -178,42 +173,14 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
     );
   }
 
+  const handlePerPageChange = (value: string | number) => {
+    setPerPage(Number(value));
+    setPage(1);
+  };
+
   return (
     <section className="w-full bg-[#fff] border border-[#f1f5fe]! rounded-sm px-2 pt-2 pb-2 h-full">
-      {/* <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => router.push('/admin/records')} className="shrink-0 text-zinc-500 hover:text-zinc-900">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-zinc-900 tracking-tight">{template.name}</h1>
-            <p className="text-sm text-zinc-500 mt-1">Viewing {filteredRecords.length} of {totalItems} submissions</p>
-          </div>
-        </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-400" />
-            <Input 
-              placeholder="Search records..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-10 w-full"
-            />
-          </div>
-          {user?.role === "admin" && (
-            <>
-              <Button onClick={handleExportDrive} disabled={isExporting} variant="outline" className="h-10 shrink-0 border-violet-200 hover:bg-violet-50 text-violet-600 hover:text-violet-700">
-                {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CloudDownload className="mr-2 h-4 w-4" />} 
-                Drive Export
-              </Button>
-              <Button onClick={handleExportCSV} variant="outline" className="h-10 shrink-0">
-                <Download className="mr-2 h-4 w-4" /> CSV
-              </Button>
-            </>
-          )}
-        </div>
-      </div> */}
 
       <Card className=" border-0! shadow-none! p-0! bg-transparent!">
         <CardHeader className="p-0!">
@@ -241,9 +208,13 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
               <Input
                 type="search"
                 placeholder="Search records..."
-                // isLoading={isSearching}
+                isLoading={isSearching}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onDebouncedChange={(value) => {
+                  setDebouncedSearch(value);
+                  setPage(1);
+                }}
               />
             </div>
             <div className="flex items-center justify-end gap-2">
@@ -267,12 +238,12 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
                 <thead className="sticky top-0 z-10 bg-[#e7ecf7] text-left text-xs uppercase tracking-wide text-zinc-500">
                   <tr>
                     <th scope="col" className="px-3 py-2.5 font-medium">Submitted By</th>
-                     {template.cameraAccess && (
+                    {template.cameraAccess && (
                       <th scope="col" className="px-3 py-2.5 font-mediumtext-center">Photo</th>
                     )}
                     <th scope="col" className="px-3 py-2.5 font-medium">Date</th>
 
-                   
+
 
                     {/* Dynamic Columns */}
                     {template.fields.map((f) => (
@@ -282,7 +253,7 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
                     ))}
 
                     {/* Camera Column */}
-                    
+
                   </tr>
                 </thead>
                 <tbody className="">
@@ -302,7 +273,7 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
                           </div>
                         </td>
 
-                         {template.cameraAccess && (
+                        {template.cameraAccess && (
                           <td className="px-3 py-2.5 text-center">
                             {record.data?.["Attached Photo"] ? (
                               <button
@@ -345,7 +316,7 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
                         })}
 
                         {/* Camera Cell */}
-                       
+
                       </tr>
                     ))
                   )}
@@ -355,22 +326,18 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
           </div>
 
           <div className="flex justify-between items-center gap-2 px-4 py-3 border-t">
-            {/* <Pagination
+            
+
+         
+
+
+            <Pagination
               currentPage={page}
               totalItems={totalItems}
-              itemsPerPage={10}
+              itemsPerPage={perPage}
               onPageChange={setPage}
-              showSummary={true}
-            /> */}
-
-                                <Pagination
-                                    currentPage={page}
-                                    totalItems={totalItems}
-                                     itemsPerPage={10}
-                                    onPageChange={setPage}
-                                     showSummary={true}
-                                />
-                                <PerPageSelect value={10} onChange={() => {}} />
+            />
+            <PerPageSelect value={perPage} onChange={handlePerPageChange} />
           </div>
 
         </div>
@@ -393,7 +360,7 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
             )}
             <Button
               variant="secondary"
-              className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute top-4 right-4  transition-opacity"
               onClick={() => setSelectedImage(null)}
             >
               Close
