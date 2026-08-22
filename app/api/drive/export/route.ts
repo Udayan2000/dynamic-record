@@ -139,20 +139,20 @@ export async function POST(request: Request) {
     const rootFolderId = await getOrCreateFolder(rootName);
 
     // Group Records
-    const groups = new Map<string, { school: string, classRoman: string, stream: string, section: string, isDummy: boolean, records: any[] }>();
+    const groups = new Map<string, { school: string, classRoman: string, section: string, roll: string, isDummy: boolean, records: any[] }>();
     
     for (const record of records) {
-      const school = getProp(record.data, ['school', 'institution'], '');
+      const school = getProp(record.data, ['school', 'institution', 'college', 'clg', 'institute'], '');
       const cls = getProp(record.data, ['class', 'grade', 'standard'], '');
-      const stream = getProp(record.data, ['stream', 'course', 'branch', 'department'], '');
       const section = getProp(record.data, ['section', 'batch', 'group'], '');
+      const roll = getProp(record.data, ['roll', 'roll no', 'roll number'], '');
       
-      const isDummy = !school || !cls || !stream || !section;
+      const isDummy = !school || !cls || !section || !roll;
       const classRoman = isDummy ? '' : toRoman(cls);
       
-      const groupKey = isDummy ? 'dummy_group' : `${school}_${classRoman}_${stream}_${section}`;
+      const groupKey = isDummy ? 'dummy_group' : `${school}_${classRoman}_${section}_${roll}`;
       if (!groups.has(groupKey)) {
-        groups.set(groupKey, { school, classRoman, stream, section, isDummy, records: [] });
+        groups.set(groupKey, { school, classRoman, section, roll, isDummy, records: [] });
       }
       groups.get(groupKey)!.records.push(record);
     }
@@ -161,20 +161,20 @@ export async function POST(request: Request) {
 
     // Process each group
     for (const [_, group] of Array.from(groups.entries())) {
-      let sectionFolderId: string;
+      let rollFolderId: string;
       
       if (group.isDummy) {
-        sectionFolderId = await getOrCreateFolder("dummy", rootFolderId);
+        rollFolderId = await getOrCreateFolder("dummy", rootFolderId);
       } else {
         const highSchoolFolderId = await getOrCreateFolder(group.school, rootFolderId);
         const classFolderId = await getOrCreateFolder(group.classRoman, highSchoolFolderId);
-        const streamFolderId = await getOrCreateFolder(group.stream, classFolderId);
-        sectionFolderId = await getOrCreateFolder(group.section, streamFolderId);
+        const sectionFolderId = await getOrCreateFolder(group.section, classFolderId);
+        rollFolderId = await getOrCreateFolder(group.roll, sectionFolderId);
       }
       
       let imageFolderId: string | null = null;
       if (hasCameraAccess) {
-        imageFolderId = await getOrCreateFolder("image", sectionFolderId);
+        imageFolderId = await getOrCreateFolder("image", rollFolderId);
       }
 
       const headers = ["Submitted By", "Email", "Date Submitted", ...fields.map((f: any) => f.label)];
@@ -231,10 +231,10 @@ export async function POST(request: Request) {
               }
               
               // Ensure student name has no spaces or weird characters if desired, but we'll leave it as is.
-              // Image name format: Class_Stream_Section_name
+              // Image name format: Class_Section_Roll_name
               const imageName = group.isDummy
                 ? `dummy_${studentName}.jpg`.replace(/\s+/g, '_')
-                : `${group.classRoman}_${group.stream}_${group.section}_${studentName}.jpg`.replace(/\s+/g, '_');
+                : `${group.classRoman}_${group.section}_${group.roll}_${studentName}.jpg`.replace(/\s+/g, '_');
               
               const uploadedImg = await uploadOrUpdateFile(imageName, mimeType, imageFolderId, stream);
               
@@ -258,9 +258,9 @@ export async function POST(request: Request) {
 
       const csvFileName = group.isDummy 
         ? `${templateName}_dummy.csv`
-        : `${templateName}_${group.school}_${group.classRoman}_${group.stream}_${group.section}.csv`;
+        : `${templateName}_${group.school}_${group.classRoman}_${group.section}_${group.roll}.csv`;
       
-      const csvFile = await uploadOrUpdateFile(csvFileName, "text/csv", sectionFolderId, csvRows.join("\n"));
+      const csvFile = await uploadOrUpdateFile(csvFileName, "text/csv", rollFolderId, csvRows.join("\n"));
       
       if (csvFile.webViewLink) exportedLinks.push(csvFile.webViewLink);
     }
