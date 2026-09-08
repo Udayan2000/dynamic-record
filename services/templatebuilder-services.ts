@@ -55,5 +55,15 @@ export const recordsApi = {
     return apiClient
       .get<{ records: any[], totalItems: number, currentPage: number, totalPages: number }>(`/records?${query.toString()}`)
       .then((res) => res.data);
-  }
+  },
+
+  updateRecord: (id: string, payload: { data: any }) =>
+    apiClient
+      .put(`/records/${id}`, payload)
+      .then((res) => res.data),
+
+  deleteRecord: (id: string) =>
+    apiClient
+      .delete(`/records/${id}`)
+      .then((res) => res.data)
 };
