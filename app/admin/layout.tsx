@@ -2,6 +2,7 @@ import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
+import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import { cookies } from "next/headers";
 import { Metadata } from "next";
 
@@ -22,9 +23,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
       <Sidebar role={role as any} />
-      <div className="flex flex-1 flex-col overflow-hidden min-w-0 w-full">
+      <div className="flex flex-1 flex-col overflow-hidden min-w-0 w-full relative">
         <Topbar user={session.user} title="Admin Portal" />
-        <main className="flex-1 bg-background p-1.5 sm:p-2 pt-0 overflow-y-auto min-w-0 w-full">{children}</main>
+        <main className="flex-1 bg-background p-1.5 sm:p-2 pt-0 pb-20 md:pb-2 overflow-y-auto min-w-0 w-full overscroll-contain">
+          {children}
+        </main>
+        <MobileBottomNav role={role as any} />
       </div>
     </div>
   );

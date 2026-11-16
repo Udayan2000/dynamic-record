@@ -52,19 +52,22 @@ export function Topbar({ user, title }: { user: User; title?: string }) {
 
   return (
     <>
-      <header className="flex h-16 items-center justify-between border-b border-border px-3 sm:px-6 bg-card text-card-foreground shadow-xs m-1.5 sm:m-2 rounded-lg">
+      <header
+        className="flex h-14 md:h-16 items-center justify-between border-b border-border px-3.5 sm:px-6 bg-card/95 backdrop-blur-md text-card-foreground shadow-xs m-0 rounded-none md:m-2 md:rounded-lg shrink-0 z-30 select-none"
+        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+      >
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {/* Mobile hamburger menu toggle */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(true)}
             aria-label="Open mobile menu"
-            className="md:hidden flex h-9 w-9 shrink-0 items-center justify-center rounded-[4px] border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
+            className="md:hidden flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-4 w-4" />
           </button>
 
-          <h1 className="font-display text-sm sm:text-base md:text-lg font-semibold tracking-tight text-foreground truncate max-w-[125px] xs:max-w-[190px] sm:max-w-none">
+          <h1 className="font-display text-sm sm:text-base md:text-lg font-semibold tracking-tight text-foreground truncate max-w-[150px] xs:max-w-[200px] sm:max-w-none">
             {title}
           </h1>
         </div>

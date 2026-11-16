@@ -126,3 +126,33 @@ body {
 .table-scrollbar::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.4);
 }
+
+/* PWA Native Mobile App Enhancements */
+html,
+body {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+body {
+  overscroll-behavior-y: none;
+}
+
+/* Prevent unwanted selection on application shell chrome */
+header,
+nav,
+button,
+[role="button"],
+.select-none {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Ensure text selection remains functional in form controls */
+input,
+textarea,
+[contenteditable="true"] {
+  user-select: text;
+  -webkit-user-select: text;
+}
