@@ -291,8 +291,8 @@ export default function Adminemployeepage() {
     return (
         <div className="flex flex-col">
             <div className="flex w-full flex-1 min-h-0 flex-col rounded-lg border border-border bg-card text-card-foreground shadow-xs mt-3 overflow-hidden">
-                <div className="flex flex-col sm:flex-row justify-between gap-3 border-b border-border p-4 bg-card">
-                    <div className="w-full max-w-[400px]">
+                <div className="flex flex-col sm:flex-row justify-between gap-3 border-b border-border p-3 sm:p-4 bg-card">
+                    <div className="w-full sm:max-w-[400px]">
                         <Input
                             type="search"
                             placeholder="Search employees..."
@@ -304,7 +304,7 @@ export default function Adminemployeepage() {
                             }}
                         />
                     </div>
-                    <div>
+                    <div className="w-full sm:w-auto">
                         <Button type="button" className="w-full cursor-pointer shadow-xs" variant="default" onClick={() => router.push("/admin/employees/addemployee")}>
                             Add Employee
                         </Button>
@@ -403,7 +403,7 @@ export default function Adminemployeepage() {
                     </div>
                 </div>
 
-                <div className="flex justify-between items-center gap-2 px-4 py-3 border-t border-border bg-card">
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-3 px-3 sm:px-4 py-3 border-t border-border bg-card">
                     <Pagination
                         currentPage={page}
                         totalItems={totalItems}

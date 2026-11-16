@@ -2,7 +2,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 
 export default function AdminDashboardPage() {
     return (
-        <section className="w-full bg-card border border-border rounded-lg p-6 shadow-xs">
+        <section className="w-full bg-card border border-border rounded-lg p-3.5 sm:p-6 shadow-xs">
             <Card className="border-0 shadow-none p-0 bg-transparent">
                 <CardHeader className="p-0">
                     <CardTitle className="text-xl font-semibold tracking-tight text-foreground">Dashboard</CardTitle>

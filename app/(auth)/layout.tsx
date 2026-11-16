@@ -4,11 +4,11 @@ import { ThemeToggle } from "@/components/common/theme-toggle";
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <div className="flex items-center justify-between px-6 py-5 border-b border-border/50">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-border/50">
         <Logo />
         <ThemeToggle />
       </div>
-      <div className="flex flex-1 items-center justify-center px-6 pb-16">
+      <div className="flex flex-1 items-center justify-center px-3 sm:px-6 pb-12 sm:pb-16">
         <div className="w-full max-w-sm">{children}</div>
       </div>
     </div>

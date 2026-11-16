@@ -64,27 +64,27 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
         <aside
           role="dialog"
           aria-label="Install App"
-          className="fixed bottom-4 left-4 right-4 z-50 md:left-auto md:right-4 md:w-96 bg-card border border-border rounded-lg shadow-lg p-3.5 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300"
+          className="fixed bottom-2.5 left-2.5 right-2.5 z-50 md:bottom-4 md:left-auto md:right-4 md:w-96 bg-card border border-border rounded-lg shadow-lg p-2.5 sm:p-3.5 flex items-center justify-between gap-2 sm:gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300"
         >
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="h-10 w-10 rounded-[4px] bg-primary flex items-center justify-center text-primary-foreground shrink-0 shadow-xs">
-              <Download className="h-5 w-5" />
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-[4px] bg-primary flex items-center justify-center text-primary-foreground shrink-0 shadow-xs">
+              <Download className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             <div className="min-w-0">
               <h4 className="text-xs font-semibold text-foreground truncate">Install Dynamic Record</h4>
-              <p className="text-[11px] text-muted-foreground truncate">Install on your phone for quick offline access.</p>
+              <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">Install on phone for offline access.</p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <Button size="sm" onClick={handleInstallClick} className="h-8 text-xs px-2.5 shadow-xs">
+          <div className="flex items-center gap-1 shrink-0">
+            <Button size="sm" onClick={handleInstallClick} className="h-7 sm:h-8 text-xs px-2 sm:px-2.5 shadow-xs">
               Install
             </Button>
             <button
               onClick={handleDismiss}
               aria-label="Dismiss banner"
-              className="h-8 w-8 inline-flex items-center justify-center rounded-[4px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
+              className="h-7 w-7 sm:h-8 sm:w-8 inline-flex items-center justify-center rounded-[4px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
           </div>
         </aside>

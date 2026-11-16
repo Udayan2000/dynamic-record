@@ -162,23 +162,23 @@ export function Pagination({
   };
 
   const baseBtn =
-    "inline-flex h-9 min-w-9 items-center justify-center rounded-[4px] px-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-40";
+    "inline-flex h-8 min-w-8 sm:h-9 sm:min-w-9 items-center justify-center rounded-[4px] px-1.5 sm:px-2 text-xs sm:text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-40";
   const ghostBtn = `${baseBtn} text-muted-foreground hover:bg-muted hover:text-foreground`;
 
   return (
     <nav
-      className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${className}`}
+      className={`flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between w-full ${className}`}
       aria-label="Pagination"
     >
       {showSummary && (
-        <p className="text-sm text-slate-500 order-2 sm:order-1">
-          Showing <span className="font-medium text-slate-700">{firstItemIndex}</span>–
-          <span className="font-medium text-slate-700">{lastItemIndex}</span> of{" "}
-          <span className="font-medium text-slate-700">{totalItems}</span> results
+        <p className="text-xs sm:text-sm text-muted-foreground order-2 sm:order-1 text-center sm:text-left">
+          Showing <span className="font-medium text-foreground">{firstItemIndex}</span>–
+          <span className="font-medium text-foreground">{lastItemIndex}</span> of{" "}
+          <span className="font-medium text-foreground">{totalItems}</span> results
         </p>
       )}
 
-      <ul className="flex items-center gap-1 order-1 sm:order-2">
+      <ul className="flex flex-wrap items-center justify-center sm:justify-end gap-1 order-1 sm:order-2">
         {showEdgeControls && (
           <li>
             <button

@@ -22,9 +22,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
       <Sidebar role={role as any} />
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden min-w-0 w-full">
         <Topbar user={session.user} title="Admin Portal" />
-        <main className="flex-1 bg-background p-2 pt-0 overflow-y-auto">{children}</main>
+        <main className="flex-1 bg-background p-1.5 sm:p-2 pt-0 overflow-y-auto min-w-0 w-full">{children}</main>
       </div>
     </div>
   );

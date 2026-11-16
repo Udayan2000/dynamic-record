@@ -55,16 +55,16 @@ export default function SettingsPage() {
   const hasCredentials = profile?.googleDriveCredentials?.clientId && profile?.googleDriveCredentials?.clientSecret;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto w-full space-y-6">
+    <div className="p-3 sm:p-6 max-w-4xl mx-auto w-full space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Settings</h1>
-        <p className="text-muted-foreground mt-2">Manage your account settings and integrations.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Settings</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">Manage your account settings and integrations.</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-foreground" xmlns="http://www.w3.org/2000/svg">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-foreground shrink-0" xmlns="http://www.w3.org/2000/svg">
               <path d="M12.01 17.561l-2.022 3.511h11.977l-1.954-3.511H12.01zM18.995 16.326L13.111 6.13H9.202l5.885 10.196h3.908zM10.871 6.13L5.05 16.21 6.94 19.5l5.885-10.197L10.871 6.13z"/>
             </svg>
             Google Drive Integration
@@ -75,12 +75,12 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {!isEditing && hasCredentials ? (
-            <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/40 p-4 border border-emerald-200 dark:border-emerald-800/50 flex items-start justify-between">
+            <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/40 p-3 sm:p-4 border border-emerald-200 dark:border-emerald-800/50 flex flex-col sm:flex-row items-start justify-between gap-3">
               <div>
                 <p className="font-medium text-emerald-900 dark:text-emerald-300">Google Drive is connected</p>
                 <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">Your OAuth credentials are securely stored and ready for exports.</p>
               </div>
-              <Button variant="outline" size="sm" onClick={handleEdit} className="bg-card border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/50">
+              <Button variant="outline" size="sm" onClick={handleEdit} className="shrink-0 bg-card border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/50">
                 Update Keys
               </Button>
             </div>

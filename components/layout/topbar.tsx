@@ -52,29 +52,29 @@ export function Topbar({ user, title }: { user: User; title?: string }) {
 
   return (
     <>
-      <header className="flex h-16 items-center justify-between border-b border-border px-4 sm:px-6 bg-card text-card-foreground shadow-xs m-2 rounded-lg">
-        <div className="flex items-center gap-3">
+      <header className="flex h-16 items-center justify-between border-b border-border px-3 sm:px-6 bg-card text-card-foreground shadow-xs m-1.5 sm:m-2 rounded-lg">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {/* Mobile hamburger menu toggle */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(true)}
             aria-label="Open mobile menu"
-            className="md:hidden flex h-9 w-9 items-center justify-center rounded-[4px] border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
+            className="md:hidden flex h-9 w-9 shrink-0 items-center justify-center rounded-[4px] border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
           >
             <Menu className="h-5 w-5" />
           </button>
 
-          <h1 className="font-display text-base sm:text-lg font-semibold tracking-tight text-foreground truncate">
+          <h1 className="font-display text-sm sm:text-base md:text-lg font-semibold tracking-tight text-foreground truncate max-w-[125px] xs:max-w-[190px] sm:max-w-none">
             {title}
           </h1>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           <ThemeToggle />
 
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted text-foreground transition-colors cursor-pointer outline-none">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <DropdownMenuTrigger className="flex items-center gap-1.5 sm:gap-2 rounded-md p-1 sm:px-2 sm:py-1.5 text-sm hover:bg-muted text-foreground transition-colors cursor-pointer outline-none">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary shrink-0">
                 <UserIcon className="h-4 w-4" />
               </span>
               <span className="hidden text-left sm:block">

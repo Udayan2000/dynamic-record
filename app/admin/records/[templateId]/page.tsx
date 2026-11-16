@@ -570,21 +570,21 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
   };
 
   return (
-    <section className="w-full bg-card border border-border rounded-lg p-4 shadow-xs h-full text-card-foreground">
+    <section className="w-full bg-card border border-border rounded-lg p-3 sm:p-4 shadow-xs h-full text-card-foreground">
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5 sm:gap-3">
         <Button variant="ghost" size="icon" onClick={() => router.push('/admin/records')} className="shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted">
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div>
-          <h1 className="font-display text-lg font-semibold leading-none tracking-tight text-foreground">{template.name}</h1>
+        <div className="min-w-0">
+          <h1 className="font-display text-base sm:text-lg font-semibold leading-none tracking-tight text-foreground truncate">{template.name}</h1>
           <p className="text-xs text-muted-foreground mt-1">Viewing {filteredRecords.length} of {totalItems} submissions</p>
         </div>
       </div>
 
       <div className="flex flex-col">
         <div className="flex w-full flex-1 min-h-0 flex-col rounded-lg border border-border bg-card mt-3 overflow-hidden shadow-xs">
-          <div className="flex flex-col sm:flex-row justify-between gap-3 border-b border-border p-4 bg-card">
+          <div className="flex flex-col sm:flex-row justify-between gap-3 border-b border-border p-3 sm:p-4 bg-card">
             <div className="w-full max-w-[400px]">
               <Input
                 type="search"
@@ -598,7 +598,7 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
                 }}
               />
             </div>
-            <div className="flex items-center justify-end gap-2">
+            <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2">
               {user?.role === "admin" && (
                 <>
                   <Button onClick={handleExportDrive} disabled={isExporting} variant="default" className="h-9 shrink-0 text-white shadow-xs">
@@ -719,7 +719,7 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
             </div>
           </div>
 
-          <div className="flex justify-between items-center gap-2 px-4 py-3 border-t border-border bg-card">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 px-3 sm:px-4 py-3 border-t border-border bg-card">
             <Pagination
               currentPage={page}
               totalItems={totalItems}
