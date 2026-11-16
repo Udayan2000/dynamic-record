@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark, .dark *));
+
 @theme {
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
@@ -31,61 +33,63 @@
 }
 
 :root {
-  --background: 210 20% 98%;
+  /* Crisp, clean, professional light theme */
+  --background: 215 25% 97%;
   --foreground: 222 47% 11%;
 
   --card: 0 0% 100%;
   --card-foreground: 222 47% 11%;
 
-  --muted: 210 20% 94%;
-  --muted-foreground: 215 16% 40%;
+  --muted: 214 20% 93%;
+  --muted-foreground: 215 16% 45%;
 
   --border: 214 20% 88%;
   --input: 214 20% 88%;
 
-  --primary: 231 82% 56%;
+  --primary: 221 83% 53%;
   --primary-foreground: 0 0% 100%;
 
   --secondary: 210 20% 94%;
   --secondary-foreground: 222 47% 11%;
 
-  --accent: 35 92% 55%;
+  --accent: 38 92% 50%;
   --accent-foreground: 26 40% 15%;
+
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  --ring: 221 83% 53%;
+
+  --radius: 0.5rem;
+}
+
+.dark {
+  /* Sleek, deep, high-contrast dark theme (Vercel/Linear style) */
+  --background: 224 71% 4%;
+  --foreground: 210 20% 98%;
+
+  --card: 222 42% 8%;
+  --card-foreground: 210 20% 98%;
+
+  --muted: 217 33% 14%;
+  --muted-foreground: 215 20% 65%;
+
+  --border: 217 33% 17%;
+  --input: 217 33% 17%;
+
+  --primary: 217 91% 60%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 217 33% 14%;
+  --secondary-foreground: 210 20% 98%;
+
+  --accent: 38 92% 55%;
+  --accent-foreground: 26 40% 12%;
 
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
 
-  --ring: 231 82% 56%;
-
-  --radius: 0.625rem;
-}
-
-.dark {
-  --background: 222 47% 7%;
-  --foreground: 210 20% 96%;
-
-  --card: 222 40% 10%;
-  --card-foreground: 210 20% 96%;
-
-  --muted: 222 30% 15%;
-  --muted-foreground: 215 16% 65%;
-
-  --border: 222 30% 18%;
-  --input: 222 30% 18%;
-
-  --primary: 231 90% 66%;
-  --primary-foreground: 222 47% 8%;
-
-  --secondary: 222 30% 15%;
-  --secondary-foreground: 210 20% 96%;
-
-  --accent: 35 92% 60%;
-  --accent-foreground: 26 40% 12%;
-
-  --destructive: 0 70% 55%;
-  --destructive-foreground: 0 0% 100%;
-
-  --ring: 231 90% 66%;
+  --ring: 217 91% 60%;
 }
 
 * {
@@ -96,14 +100,29 @@ body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
   font-feature-settings: "cv11", "ss01";
+  min-height: 100vh;
 }
 
-html.theme-dark {
-  filter: invert(1) hue-rotate(180deg);
+/* Professional table scrollbars */
+.table-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
 }
 
-html.theme-dark img,
-html.theme-dark canvas,
-html.theme-dark video {
-  filter: invert(1) hue-rotate(180deg);
+.table-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.table-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+}
+
+.table-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.4);
 }

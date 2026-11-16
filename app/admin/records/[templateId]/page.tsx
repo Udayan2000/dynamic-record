@@ -570,25 +570,21 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
   };
 
   return (
-    <section className="w-full bg-[#fff] border border-[#f1f5fe]! rounded-sm px-2 pt-2 pb-2 h-full">
+    <section className="w-full bg-card border border-border rounded-lg p-4 shadow-xs h-full text-card-foreground">
 
-      <Card className=" border-0! shadow-none! p-0! bg-transparent!">
-        <CardHeader className="p-0!">
-          <CardTitle className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => router.push('/admin/records')} className="shrink-0 text-zinc-500 hover:text-zinc-900 bg-[#e7ecf7]">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="font-display text-lg font-semibold leading-none tracking-tight">{template.name}</h1>
-              <p className="text-sm text-zinc-500 mt-1">Viewing {filteredRecords.length} of {totalItems} submissions</p>
-            </div>
-          </CardTitle>
-        </CardHeader>
-      </Card>
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={() => router.push('/admin/records')} className="shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted">
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div>
+          <h1 className="font-display text-lg font-semibold leading-none tracking-tight text-foreground">{template.name}</h1>
+          <p className="text-xs text-muted-foreground mt-1">Viewing {filteredRecords.length} of {totalItems} submissions</p>
+        </div>
+      </div>
 
       <div className="flex flex-col">
-        <div className="flex w-full flex-1 min-h-0 flex-col rounded-[10px] border border-[#bec1c7a1] bg-white mt-4">
-          <div className="flex flex-col sm:flex-row justify-between gap-2 border-b px-4 py-3">
+        <div className="flex w-full flex-1 min-h-0 flex-col rounded-lg border border-border bg-card mt-3 overflow-hidden shadow-xs">
+          <div className="flex flex-col sm:flex-row justify-between gap-3 border-b border-border p-4 bg-card">
             <div className="w-full max-w-[400px]">
               <Input
                 type="search"
@@ -605,11 +601,11 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
             <div className="flex items-center justify-end gap-2">
               {user?.role === "admin" && (
                 <>
-                  <Button onClick={handleExportDrive} disabled={isExporting} variant="default" className="h-10 shrink-0 text-white">
+                  <Button onClick={handleExportDrive} disabled={isExporting} variant="default" className="h-9 shrink-0 text-white shadow-xs">
                     {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CloudDownload className="mr-2 h-4 w-4" />}
                     Drive Export
                   </Button>
-                  <Button onClick={handleExportCSV} variant="outline" className="h-10 shrink-0">
+                  <Button onClick={handleExportCSV} variant="outline" className="h-9 shrink-0 shadow-xs">
                     <Download className="mr-2 h-4 w-4" /> CSV
                   </Button>
                 </>
@@ -617,62 +613,62 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
             </div>
           </div>
 
-          <div className="grid w-full p-1">
-            <div className="h-[calc(100vh-287px)] overflow-y-auto overflow-x-auto w-full">
-              <table className="w-full text-left text-sm text-zinc-600 whitespace-nowrap">
-                <thead className="sticky top-0 z-10 bg-[#e7ecf7] text-left text-xs uppercase tracking-wide text-zinc-500">
+          <div className="w-full">
+            <div className="h-[calc(100vh-287px)] overflow-y-auto overflow-x-auto w-full relative table-scrollbar">
+              <table className="w-full text-left text-sm text-foreground whitespace-nowrap min-w-[850px] border-collapse">
+                <thead className="sticky top-0 z-20 bg-muted border-b border-border shadow-xs">
                   <tr>
-                    <th scope="col" className="px-3 py-2.5 font-medium">Submitted By</th>
+                    <th scope="col" className="px-5 py-3.5 font-semibold text-xs uppercase tracking-wider text-muted-foreground bg-muted sticky top-0">Submitted By</th>
                     {template.cameraAccess && (
-                      <th scope="col" className="px-3 py-2.5 font-mediumtext-center">Photo</th>
+                      <th scope="col" className="px-5 py-3.5 font-semibold text-xs uppercase tracking-wider text-muted-foreground bg-muted sticky top-0 text-center">Photo</th>
                     )}
-                    <th scope="col" className="px-3 py-2.5 font-medium">Date</th>
+                    <th scope="col" className="px-5 py-3.5 font-semibold text-xs uppercase tracking-wider text-muted-foreground bg-muted sticky top-0">Date</th>
                     
                     {template.fields.map((f) => (
-                      <th key={f.id} scope="col" className="px-3 py-2.5 font-medium max-w-[200px] truncate" title={f.label}>
+                      <th key={f.id} scope="col" className="px-5 py-3.5 font-semibold text-xs uppercase tracking-wider text-muted-foreground bg-muted sticky top-0 max-w-[200px] truncate" title={f.label}>
                         {f.label}
                       </th>
                     ))}
                     
-                    <th scope="col" className="px-3 py-2.5 font-medium text-right">Actions</th>
+                    <th scope="col" className="px-5 py-3.5 font-semibold text-xs uppercase tracking-wider text-muted-foreground bg-muted sticky top-0 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="">
+                <tbody className="divide-y divide-border/60 bg-card">
                   {filteredRecords.length === 0 ? (
                     <tr>
-                      <td colSpan={template.fields.length + 4} className="px-3 py-2.5 text-center text-zinc-500">
+                      <td colSpan={template.fields.length + 4} className="px-5 py-8 text-center text-muted-foreground">
                         No records match your search.
                       </td>
                     </tr>
                   ) : (
                     filteredRecords.map((record: any) => (
-                      <tr key={record._id} className="border-b border-[#f1f5fe] hover:bg-[#fafbff]">
-                        <td className="px-3 py-2.5">
+                      <tr key={record._id} className="hover:bg-muted/40 transition-colors">
+                        <td className="px-5 py-3.5">
                           <div className="flex flex-col">
-                            <span className="font-medium text-zinc-900">{record.submitterName}</span>
-                            <span className="text-xs text-zinc-500">{record.submitterEmail}</span>
+                            <span className="font-medium text-foreground">{record.submitterName}</span>
+                            <span className="text-xs text-muted-foreground">{record.submitterEmail}</span>
                           </div>
                         </td>
 
                         {template.cameraAccess && (
-                          <td className="px-3 py-2.5 text-center">
+                          <td className="px-5 py-3.5 text-center">
                             {record.data?.["Attached Photo"] ? (
                               <button
                                 onClick={() => setSelectedImage(record.data["Attached Photo"])}
-                                className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white hover:bg-zinc-50 transition-colors shadow-sm overflow-hidden"
+                                className="inline-flex h-10 w-10 items-center justify-center rounded-[4px] border border-border bg-card hover:bg-muted transition-colors shadow-xs overflow-hidden cursor-pointer"
                                 title="View Photo"
                               >
                                 <img src={record.data["Attached Photo"]} className="h-full w-full object-cover" alt="Record attachment" />
                               </button>
                             ) : (
-                              <div className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-dashed border-zinc-200 bg-zinc-50 text-zinc-300">
+                              <div className="inline-flex h-10 w-10 items-center justify-center rounded-[4px] border border-dashed border-border bg-muted/30 text-muted-foreground">
                                 <ImageIcon className="h-4 w-4" />
                               </div>
                             )}
                           </td>
                         )}
-                        <td className="px-3 py-2.5">
-                          <div className="flex items-center gap-2 text-zinc-500">
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-2 text-muted-foreground text-xs">
                             <Calendar className="h-3.5 w-3.5" />
                             {new Date(record.createdAt).toLocaleDateString()}
                           </div>
@@ -681,35 +677,35 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
                         {template.fields.map((f) => {
                           const val = record.data?.[f.label];
                           return (
-                            <td key={f.id} className="px-3 py-2.5 max-w-[200px] truncate" title={Array.isArray(val) ? val.join(", ") : val}>
+                            <td key={f.id} className="px-5 py-3.5 max-w-[200px] truncate text-foreground" title={Array.isArray(val) ? val.join(", ") : val}>
                               {Array.isArray(val) ? (
                                 val.length > 0 ? (
-                                  <span className="text-zinc-800">{val.join(", ")}</span>
+                                  <span>{val.join(", ")}</span>
                                 ) : (
-                                  <span className="text-zinc-300 italic">-</span>
+                                  <span className="text-muted-foreground italic">-</span>
                                 )
                               ) : (
-                                val ? <span className="text-zinc-800">{val}</span> : <span className="text-zinc-300 italic">-</span>
+                                val ? <span>{val}</span> : <span className="text-muted-foreground italic">-</span>
                               )}
                             </td>
                           );
                         })}
 
-                        <td className="px-3 py-2.5 text-right">
+                        <td className="px-5 py-3.5 text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreVertical className="h-4 w-4 text-zinc-500" />
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onSelect={() => setTimeout(() => setViewRecord(record), 0)}>
-                                <Eye className="mr-2 h-4 w-4" /> View Details
+                                <Eye className="mr-2 h-4 w-4 text-muted-foreground" /> View Details
                               </DropdownMenuItem>
                               <DropdownMenuItem onSelect={() => setTimeout(() => setEditRecord(record), 0)}>
-                                <Edit className="mr-2 h-4 w-4" /> Edit Record
+                                <Edit className="mr-2 h-4 w-4 text-muted-foreground" /> Edit Record
                               </DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => setTimeout(() => setDeleteRecordId(record._id), 0)} className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                              <DropdownMenuItem onSelect={() => setTimeout(() => setDeleteRecordId(record._id), 0)} className="text-destructive focus:text-destructive">
                                 <Trash className="mr-2 h-4 w-4" /> Delete Record
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -723,7 +719,7 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
             </div>
           </div>
 
-          <div className="flex justify-between items-center gap-2 px-4 py-3 border-t">
+          <div className="flex justify-between items-center gap-2 px-4 py-3 border-t border-border bg-card">
             <Pagination
               currentPage={page}
               totalItems={totalItems}

@@ -3,7 +3,7 @@ import Admintemplatepage from "./component/Admintemplatepage";
 
 export default function TemplatesPage(){
       return (
-        <section className="w-full bg-[#fff] border border-[#f1f5fe]! rounded-sm px-2 pt-2 pb-2 h-full">
+        <section className="w-full bg-card border border-border rounded-lg p-4 shadow-xs">
              <Card className=" border-0! shadow-none! p-0! bg-transparent!">
                 <CardHeader className="p-0!">
                     <CardTitle>Template</CardTitle>

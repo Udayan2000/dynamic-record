@@ -151,24 +151,24 @@ function ImageCaptureField({
   useEffect(() => () => stopCamera(), []);
 
   return (
-    <div className="rounded-sm border border-[#f1f5fe] bg-white p-3">
+    <div className="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-xs">
       <div className="flex items-center justify-between mb-1">
-        <Label className="text-sm font-semibold text-zinc-800">Profile / upload image</Label>
+        <Label className="text-sm font-semibold text-foreground">Profile / upload image</Label>
         {isResizing && onSaveResize && (
           <Button type="button" size="sm" onClick={onSaveResize}>
             <Save className="mr-1.5 h-3.5 w-3.5" /> Save
           </Button>
         )}
       </div>
-      <p className="mb-2 mt-0.5 text-xs text-zinc-400">
+      <p className="mb-2 mt-0.5 text-xs text-muted-foreground">
         Always available — capture from a webcam or phone camera (front or back). Drag the handle below to set camera height.
       </p>
 
       <div
         style={{ height }}
-        className="relative mt-2 w-full overflow-hidden rounded-md border border-dashed border-[#c7d7fe] bg-[#fafbff]"
+        className="relative mt-2 w-full overflow-hidden rounded-md border border-dashed border-border bg-muted/30"
       >
-        <div className="flex h-full flex-col items-center justify-center gap-2 text-zinc-400">
+        <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
           {!cameraOpen ? (
             <>
               <Camera className="h-8 w-8" />
@@ -181,10 +181,10 @@ function ImageCaptureField({
         {isResizing && (
           <div
             onPointerDown={onDragStart}
-            className="absolute bottom-0 left-1/2 flex h-5 w-16 -translate-x-1/2 cursor-ns-resize items-center justify-center rounded-t-md border border-b-0 border-[#c7d7fe] bg-white/90"
+            className="absolute bottom-0 left-1/2 flex h-5 w-16 -translate-x-1/2 cursor-ns-resize items-center justify-center rounded-t-md border border-b-0 border-border bg-card/90"
             title="Drag to resize"
           >
-            <GripHorizontal className="h-3.5 w-3.5 text-zinc-400" />
+            <GripHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
           </div>
         )}
       </div>
@@ -418,28 +418,28 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
 
   return (
     <div>
-      <div className="w-full bg-[#fff] border border-[#f1f5fe]! rounded-sm px-2 pt-2 pb-2">
+      <div className="w-full bg-card border border-border text-card-foreground rounded-lg p-4 shadow-xs">
         {isFetching && (
-          <div className="absolute inset-0 bg-white/50 z-50 flex items-center justify-center backdrop-blur-sm">
+          <div className="absolute inset-0 bg-background/50 z-50 flex items-center justify-center backdrop-blur-xs">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         )}
         {/* Top action bar --------------------------------------------------- */}
-        <div className="mb-3 flex flex-col gap-3 rounded-sm border border-[#f1f5fe] bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-4 flex flex-col gap-3 rounded-lg border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between shadow-xs">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => router.back()} title="Back" className="self-end mb-1">
+            <Button variant="ghost" size="icon" onClick={() => router.back()} title="Back" className="self-end mb-1 text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
-                <Label htmlFor="template-name-input" className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Template Name</Label>
+                <Label htmlFor="template-name-input" className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Template Name</Label>
                 <Badge
                   variant="outline"
                   className={cn(
                     "rounded-full border px-2 py-0 text-[10px]",
                     status === "active"
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                      : "border-zinc-200 bg-zinc-100 text-zinc-500"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/50"
+                      : "border-border bg-muted text-muted-foreground"
                   )}
                 >
                   {status === "active" ? "Active" : "Inactive"}
@@ -450,7 +450,7 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
                 value={templateName}
                 onChange={(e) => setTemplateName(e.target.value)}
                 placeholder="Enter template name..."
-                className="h-10 px-3 text-lg font-bold shadow-sm w-full min-w-[300px] border-zinc-200 focus-visible:ring-1"
+                className="h-10 px-3 text-lg font-bold shadow-xs w-full min-w-[300px]"
               />
             </div>
           </div>
@@ -470,7 +470,7 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 max-h-[calc(100vh-193px)] overflow-y-auto">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 max-h-[calc(100vh-225px)] overflow-y-auto">
           {/* Left / main column --------------------------------------------- */}
           <div className="flex flex-col gap-3 lg:col-span-2">
             <ImageCaptureField
@@ -488,41 +488,41 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
             />
 
             {/* Custom field builder */}
-            <div className="rounded-sm border border-[#f1f5fe] bg-white p-3">
-              <div className="mb-2 flex items-center justify-between">
+            <div className="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-xs">
+              <div className="mb-3 flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-zinc-800">Form fields</h3>
-                  <p className="text-xs text-zinc-400">
+                  <h3 className="text-sm font-semibold text-foreground">Form fields</h3>
+                  <p className="text-xs text-muted-foreground">
                     Add your own labels and pick the input type each one needs.
                   </p>
                 </div>
-                <Button size="sm" onClick={openAddField}>
+                <Button size="sm" onClick={openAddField} className="shadow-xs cursor-pointer">
                   <Plus className="mr-1.5 h-3.5 w-3.5" /> Add label
                 </Button>
               </div>
 
               {fields.length === 0 ? (
-                <div className="flex min-h-[140px] flex-col items-center justify-center gap-1 rounded-md border border-dashed border-[#e2e8f9] text-center">
-                  <p className="text-sm text-zinc-500">No fields yet</p>
-                  <p className="text-xs text-zinc-400">Click "Add label" to build your form.</p>
+                <div className="flex min-h-[140px] flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border bg-muted/20 text-center">
+                  <p className="text-sm text-foreground">No fields yet</p>
+                  <p className="text-xs text-muted-foreground">Click &quot;Add label&quot; to build your form.</p>
                 </div>
               ) : (
-                <ul className="divide-y divide-[#f1f5fe]">
+                <ul className="divide-y divide-border/60">
                   {fields.map((field) => (
                     <li key={field.id} className="flex items-center justify-between gap-3 py-2.5">
                       <div>
-                        <div className="text-sm font-medium text-zinc-800">
+                        <div className="text-sm font-medium text-foreground">
                           {field.label}
-                          {field.required && <span className="ml-1 text-red-500">*</span>}
+                          {field.required && <span className="ml-1 text-destructive">*</span>}
                         </div>
-                        <div className="text-xs text-zinc-400">
+                        <div className="text-xs text-muted-foreground">
                           {FIELD_TYPES.find((t) => t.value === field.type)?.label}
                           {field.options.length > 0 && ` · ${field.options.join(", ")}`}
                         </div>
                       </div>
                       <div className="flex shrink-0 gap-1">
                         <Button variant="ghost" size="icon" title="Edit" onClick={() => openEditField(field)}>
-                          <Pencil className="h-4 w-4 text-zinc-500" />
+                          <Pencil className="h-4 w-4 text-muted-foreground hover:text-foreground" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -530,7 +530,7 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
                           title="Delete"
                           onClick={() => setDeleteFieldId(field.id)}
                         >
-                          <Trash2 className="h-4 w-4 text-red-500" />
+                          <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     </li>
@@ -542,11 +542,11 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
 
           {/* Right column: live preview + access control + camera settings --------------------- */}
           <div className="flex flex-col gap-3">
-            <div className="rounded-sm border border-[#f1f5fe] bg-white p-3">
+            <div className="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-xs">
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <h3 className="text-sm font-semibold text-zinc-800">Enable Camera / Photo Upload</h3>
-                  <p className="text-xs text-zinc-400 mt-0.5">Allow users to attach a photo when submitting a record</p>
+                  <h3 className="text-sm font-semibold text-foreground">Enable Camera / Photo Upload</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">Allow users to attach a photo when submitting a record</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input 
@@ -561,13 +561,13 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
                       }
                     }}
                   />
-                  <div className="w-9 h-5 bg-zinc-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                  <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
                 </label>
               </div>
             </div>
 
-            <div className="rounded-sm border border-[#f1f5fe] bg-white p-3">
-              <h3 className="mb-2 text-sm font-semibold text-zinc-800">Live preview</h3>
+            <div className="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-xs">
+              <h3 className="mb-2 text-sm font-semibold text-foreground">Live preview</h3>
               <div className="flex flex-col gap-3">
                 {cameraOpen && (
                   <video
@@ -587,7 +587,7 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
                   />
                 )}
                 {fields.length === 0 ? (
-                  <p className="text-xs text-zinc-400">Fields you add will appear here.</p>
+                  <p className="text-xs text-muted-foreground">Fields you add will appear here.</p>
                 ) : (
                   <div className="flex flex-col gap-3">
                     {fields.map((field) => (
@@ -598,14 +598,14 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
               </div>
             </div>
 
-            <div className="rounded-sm border border-[#f1f5fe] bg-white p-3">
-              <h3 className="mb-2 text-sm font-semibold text-zinc-800">Assign Employees (Grant Access)</h3>
-              <p className="mb-2 text-xs text-zinc-400">
+            <div className="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-xs">
+              <h3 className="mb-2 text-sm font-semibold text-foreground">Assign Employees (Grant Access)</h3>
+              <p className="mb-2 text-xs text-muted-foreground">
                 Grant specific employees access to use this template. As an admin, you can edit all features.
               </p>
               <div className="flex flex-col gap-2">
                 <div className="relative">
-                  <UserIcon className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-400" />
+                  <UserIcon className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
                     placeholder="Full name"
                     value={accessName}
@@ -614,7 +614,7 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
                   />
                 </div>
                 <div className="relative">
-                  <Mail className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-400" />
+                  <Mail className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
                     placeholder="Email address"
                     type="email"

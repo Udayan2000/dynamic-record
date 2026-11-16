@@ -32,13 +32,13 @@ export function ProblemSolution() {
   }, { scope: sectionRef });
 
   return (
-    <section ref={sectionRef} id="features" className="py-24 bg-white relative overflow-hidden">
+    <section ref={sectionRef} id="features" className="py-24 bg-background relative overflow-hidden transition-colors">
       <div className="container mx-auto px-6 max-w-7xl">
         <div className="text-center mb-16 max-w-3xl mx-auto">
-          <h2 className="ps-title text-3xl md:text-5xl font-bold text-zinc-900 mb-6">
+          <h2 className="ps-title text-3xl md:text-5xl font-bold text-foreground mb-6">
             Tired of scattered spreadsheets and lost photos?
           </h2>
-          <p className="ps-subtitle text-lg text-zinc-600">
+          <p className="ps-subtitle text-lg text-muted-foreground">
             Collecting data manually from multiple sources leads to chaos. We transform that chaos into a perfectly structured system.
           </p>
         </div>
@@ -46,53 +46,53 @@ export function ProblemSolution() {
         <div className="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-12 relative">
           
           {/* Chaos Card */}
-          <div className="ps-card-chaos w-full max-w-md bg-red-50/50 border border-red-100 rounded-3xl p-8 relative overflow-hidden">
+          <div className="ps-card-chaos w-full max-w-md bg-rose-50/60 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-900/40 rounded-3xl p-8 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-6 opacity-10">
-              <AlertTriangle className="w-32 h-32 text-red-500" />
+              <AlertTriangle className="w-32 h-32 text-rose-500" />
             </div>
             <div className="flex items-center gap-3 mb-6 relative z-10">
-              <div className="bg-red-100 p-2 rounded-full text-red-600">
+              <div className="bg-rose-100 dark:bg-rose-900/50 p-2 rounded-full text-rose-600 dark:text-rose-400">
                 <AlertTriangle className="w-5 h-5" />
               </div>
-              <h3 className="text-xl font-bold text-red-950">The Old Way</h3>
+              <h3 className="text-xl font-bold text-rose-950 dark:text-rose-300">The Old Way</h3>
             </div>
-            <ul className="space-y-4 relative z-10 text-red-900/80 font-medium">
+            <ul className="space-y-4 relative z-10 text-rose-900/80 dark:text-rose-200/80 font-medium">
               <li className="flex items-start gap-3">
-                <span className="mt-1 block w-2 h-2 rounded-full bg-red-400 shrink-0" />
+                <span className="mt-1 block w-2 h-2 rounded-full bg-rose-400 shrink-0" />
                 Photos sent via WhatsApp or Email
               </li>
               <li className="flex items-start gap-3">
-                <span className="mt-1 block w-2 h-2 rounded-full bg-red-400 shrink-0" />
+                <span className="mt-1 block w-2 h-2 rounded-full bg-rose-400 shrink-0" />
                 Data typed manually into endless spreadsheets
               </li>
               <li className="flex items-start gap-3">
-                <span className="mt-1 block w-2 h-2 rounded-full bg-red-400 shrink-0" />
+                <span className="mt-1 block w-2 h-2 rounded-full bg-rose-400 shrink-0" />
                 Missing attachments and broken links
               </li>
               <li className="flex items-start gap-3">
-                <span className="mt-1 block w-2 h-2 rounded-full bg-red-400 shrink-0" />
+                <span className="mt-1 block w-2 h-2 rounded-full bg-rose-400 shrink-0" />
                 No access control or role management
               </li>
             </ul>
           </div>
 
           {/* Arrow */}
-          <div className="ps-arrow hidden lg:flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-blue-600 z-10 shrink-0">
+          <div className="ps-arrow hidden lg:flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 text-primary z-10 shrink-0 border border-primary/20">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
           </div>
 
           {/* Order Card */}
-          <div className="ps-card-order w-full max-w-md bg-emerald-50/50 border border-emerald-100 rounded-3xl p-8 relative overflow-hidden shadow-xl shadow-emerald-900/5">
+          <div className="ps-card-order w-full max-w-md bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-900/40 rounded-3xl p-8 relative overflow-hidden shadow-xl shadow-emerald-900/5">
             <div className="absolute top-0 right-0 p-6 opacity-10">
               <CheckCircle2 className="w-32 h-32 text-emerald-500" />
             </div>
             <div className="flex items-center gap-3 mb-6 relative z-10">
-              <div className="bg-emerald-100 p-2 rounded-full text-emerald-600">
+              <div className="bg-emerald-100 dark:bg-emerald-900/50 p-2 rounded-full text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 className="w-5 h-5" />
               </div>
-              <h3 className="text-xl font-bold text-emerald-950">Dynamic Record</h3>
+              <h3 className="text-xl font-bold text-emerald-950 dark:text-emerald-300">Dynamic Record</h3>
             </div>
-            <ul className="space-y-4 relative z-10 text-emerald-900/80 font-medium">
+            <ul className="space-y-4 relative z-10 text-emerald-900/80 dark:text-emerald-200/80 font-medium">
               <li className="flex items-start gap-3">
                 <span className="mt-1 block w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
                 Custom forms designed exactly for your needs

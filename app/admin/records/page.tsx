@@ -9,12 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 export default function RecordsPage() {
   const router = useRouter();
   const [page, setPage] = useState(1);
-     const [searchTerm, setSearchTerm] = useState("");
-      const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const { data: recordsData, isLoading: isLoadingRecords } = useQuery({
     queryKey: ["records_all"],
@@ -42,31 +43,22 @@ export default function RecordsPage() {
   }
 
   return (
-    <div className="w-full bg-[#fff] border border-[#f1f5fe]! rounded-sm px-2 pt-2 pb-2 h-full">
-      {/* <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900 tracking-tight">Records Hub</h1>
-          <p className="text-sm text-zinc-500 mt-1">Select a template to view its submitted records.</p>
-        </div>
-      </div> */}
-
-      <Card className=" border-0! shadow-none! p-0! bg-transparent!">
-        <CardHeader className="p-0!">
-          <CardTitle>Records Hub</CardTitle>
-          <CardDescription>Select a template to view its submitted records.</CardDescription>
-        </CardHeader>
-
-      </Card>
+    <div className="w-full bg-card border border-border rounded-lg p-4 shadow-xs">
+      <div className="mb-2">
+        <h1 className="text-lg font-semibold tracking-tight text-foreground">Records Hub</h1>
+        <p className="text-xs text-muted-foreground">Select a template to view, search, and export its submitted records.</p>
+      </div>
 
       {templates.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-[300px] text-zinc-500 gap-2 border border-dashed rounded-lg bg-zinc-50/50">
-          <FolderOpenDot className="h-8 w-8 text-zinc-300" />
-          <p className="font-medium text-zinc-500">No templates found</p>
+        <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground gap-2 border border-dashed border-border rounded-lg bg-muted/20 mt-4">
+          <FolderOpenDot className="h-8 w-8 text-muted-foreground/50" />
+          <p className="font-medium text-foreground">No templates found</p>
+          <p className="text-xs text-muted-foreground">Create a template first to start collecting records.</p>
         </div>
       ) : (
         <div className="flex flex-col">
-          <div className="flex w-full flex-1 min-h-0 flex-col rounded-[10px] border border-[#bec1c7a1] bg-white mt-4">
-            <div className="flex justify-between gap-2 border-b px-2 py-2">
+          <div className="flex w-full flex-1 min-h-0 flex-col rounded-lg border border-border bg-card text-card-foreground shadow-xs mt-3 overflow-hidden">
+            <div className="flex justify-between items-center gap-2 border-b border-border p-4 bg-card">
               <div className="w-full max-w-[400px]">
                 <Input
                   id="search-template"
@@ -81,61 +73,56 @@ export default function RecordsPage() {
                   }}
                 />
               </div>
-              <div>
-                
-              </div>
             </div>
-            <div className="w-full p-2 min-h-[calc(100vh-278px)] max-h-[calc(100vh-278px)] overflow-y-auto">
-              <table className="w-full text-left text-sm text-zinc-600">
-                <thead className="bg-[#fafbff] text-xs uppercase text-zinc-500 border-b border-[#f1f5fe]">
+            <div className="w-full h-[calc(100vh-287px)] overflow-y-auto overflow-x-auto relative table-scrollbar">
+              <table className="w-full text-left text-sm text-foreground whitespace-nowrap min-w-[700px] border-collapse">
+                <thead className="sticky top-0 z-20 bg-muted border-b border-border shadow-xs">
                   <tr>
-                    <th scope="col" className="px-6 py-4 font-medium">Template</th>
-                    <th scope="col" className="px-6 py-4 font-medium">Total Records</th>
-                    <th scope="col" className="px-6 py-4 font-medium">Status</th>
-                    <th scope="col" className="px-6 py-4 font-medium text-right">Action</th>
+                    <th scope="col" className="px-6 py-3.5 font-semibold text-xs uppercase tracking-wider text-muted-foreground bg-muted sticky top-0">Template</th>
+                    <th scope="col" className="px-6 py-3.5 font-semibold text-xs uppercase tracking-wider text-muted-foreground bg-muted sticky top-0">Total Records</th>
+                    <th scope="col" className="px-6 py-3.5 font-semibold text-xs uppercase tracking-wider text-muted-foreground bg-muted sticky top-0">Status</th>
+                    <th scope="col" className="px-6 py-3.5 font-semibold text-xs uppercase tracking-wider text-muted-foreground bg-muted sticky top-0 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#f1f5fe] bg-white">
+                <tbody className="divide-y divide-border/60 bg-card">
                   {templates.map((template: any) => {
-                    const templateRecords = records.filter((r: any) =>
+                    const templateRecords = records.filter((r: any) => 
                       r.templateId?._id === template._id || r.templateId === template._id
                     );
-
                     return (
-                      <tr key={template._id} className="hover:bg-[#fafbff] transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-3">
-                            {template.image && template.image !== "CAMERA_ENABLED" ? (
-                              <img src={template.image} className="w-10 h-10 rounded object-cover border" alt="" />
-                            ) : (
-                              <div className="w-10 h-10 rounded bg-zinc-100 flex items-center justify-center border text-zinc-400">
-                                <FolderOpenDot className="w-4 h-4" />
-                              </div>
-                            )}
-                            <span className="font-medium text-zinc-900">{template.name || "Untitled Template"}</span>
+                      <tr 
+                        key={template._id} 
+                        className="hover:bg-muted/40 transition-colors cursor-pointer group"
+                        onClick={() => router.push(`/admin/records/${template._id}`)}
+                      >
+                        <td className="px-6 py-3.5 font-medium flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-[4px] bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                            <FolderOpenDot className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <span className="font-semibold text-foreground text-sm block group-hover:text-primary transition-colors">{template.name}</span>
+                            <span className="text-xs text-muted-foreground">{template.fields?.length || 0} fields</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-zinc-800 bg-zinc-100 px-2 py-1 rounded-md">
-                              {templateRecords.length}
-                            </span>
-                            <span className="text-xs text-zinc-500">Submissions</span>
-                          </div>
+                        <td className="px-6 py-3.5 text-muted-foreground">
+                          <span className="font-semibold text-foreground">{templateRecords.length}</span> submissions
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${template.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                        <td className="px-6 py-3.5">
+                          <Badge variant={template.status === "active" ? "default" : "secondary"} className="capitalize text-xs">
                             {template.status}
-                          </span>
+                          </Badge>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => router.push(`/admin/records/${template._id}`)}
-                            className="h-8 text-xs shadow-sm cursor-pointer"
+                        <td className="px-6 py-3.5 text-right">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/admin/records/${template._id}`);
+                            }}
+                            className="cursor-pointer"
                           >
-                            <Eye className="mr-2 h-3.5 w-3.5" /> View Data
+                            <Eye className="h-3.5 w-3.5 mr-1" /> View Records
                           </Button>
                         </td>
                       </tr>
@@ -145,13 +132,12 @@ export default function RecordsPage() {
               </table>
             </div>
 
-            <div className="flex justify-between items-center gap-2 px-4 py-3 border-t">
+            <div className="flex justify-between items-center gap-2 px-4 py-3 border-t border-border bg-card">
               <Pagination
                 currentPage={page}
                 totalItems={totalTemplates}
                 itemsPerPage={10}
                 onPageChange={setPage}
-                showSummary={true}
               />
             </div>
           </div>

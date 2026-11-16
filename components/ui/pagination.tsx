@@ -162,8 +162,8 @@ export function Pagination({
   };
 
   const baseBtn =
-    "inline-flex h-9 min-w-9 items-center justify-center rounded-md px-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-40";
-  const ghostBtn = `${baseBtn} text-slate-500 hover:bg-slate-100 hover:text-slate-700`;
+    "inline-flex h-9 min-w-9 items-center justify-center rounded-[4px] px-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-40";
+  const ghostBtn = `${baseBtn} text-muted-foreground hover:bg-muted hover:text-foreground`;
 
   return (
     <nav
@@ -218,7 +218,7 @@ export function Pagination({
                 aria-current={page === safeCurrentPage ? "page" : undefined}
                 className={
                   page === safeCurrentPage
-                    ? `${baseBtn} bg-indigo-600 text-white shadow-sm hover:bg-indigo-600`
+                    ? `${baseBtn} bg-primary text-primary-foreground shadow-xs hover:bg-primary/90`
                     : ghostBtn
                 }
               >

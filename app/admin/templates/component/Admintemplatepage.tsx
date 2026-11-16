@@ -73,120 +73,117 @@ export default function Admintemplatepage() {
     });
 
     return (
-        <>
-            <div className="flex flex-col">
-                <div className="flex w-full flex-1 min-h-0 flex-col rounded-[10px] border border-[#bec1c7a1] bg-white mt-4">
-                    <div className="flex justify-between gap-2 border-b px-2 py-2">
-                        <div className="w-full max-w-[400px]">
-                            <Input
-                                id="search-template"
-                                type="text"
-                                placeholder="Search templates..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                        <div>
-                            <Button
-                                type="button"
-                                className="w-full cursor-pointer"
-                                variant="default"
-                                onClick={() => router.push("/admin/templates/newtemplate")}
-                            >
-                                Add Template
-                            </Button>
-                        </div>
-                    </div>
-
-                    <div className="w-full p-2 min-h-[calc(100vh-278px)] max-h-[calc(100vh-278px)] overflow-y-auto">
-                        {isLoading ? (
-                            <div className="flex items-center justify-center h-[300px] text-zinc-500">
-                                Loading templates...
-                            </div>
-                        ) : templates.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-[300px] text-zinc-500 gap-2">
-                                <Inbox className="h-8 w-8 text-zinc-300" />
-                                <p className="font-medium text-zinc-500">No templates found</p>
-                                <p className="text-xs text-zinc-400">Click &apos;Add Template&apos; to create one.</p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                {templates.map((template: any) => (
-                                    <Card
-                                        key={template._id}
-                                        className="overflow-hidden hover:border-primary/50 transition-colors cursor-pointer group"
-                                        onClick={() => router.push(`/admin/templates/${template._id}`)}
-                                    >
-                                        <div className="h-32 bg-zinc-100 flex items-center justify-center border-b relative">
-                                            {template.image ? (
-                                                <img
-                                                    src={template.image}
-                                                    alt={template.name}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            ) : (
-                                                <FileStack className="h-12 w-12 text-zinc-300" />
-                                            )}
-                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
-                                                <span className="text-white font-medium text-sm flex items-center gap-2">
-                                                    <Eye className="w-4 h-4" /> View Template
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <CardHeader className="p-4">
-                                            <div className="flex justify-between items-start">
-                                                <CardTitle className="text-base font-medium truncate pr-2 group-hover:text-primary transition-colors">
-                                                    {template.name || "Untitled Template"}
-                                                </CardTitle>
-                                                <div className="flex items-center gap-2">
-                                                    <Badge variant={template.status === 'active' ? 'default' : 'secondary'} className="text-[10px] py-1 px-2 rounded-sm">
-                                                        {template.status}
-                                                    </Badge>
-                                                    <div onClick={(e) => e.stopPropagation()}>
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
-                                                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                                                    <span className="sr-only">Open menu</span>
-                                                                    <MoreVertical className="h-4 w-4 text-zinc-500" />
-                                                                </Button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end">
-                                                                <DropdownMenuItem onClick={() => router.push(`/admin/templates/${template._id}/upload`)}>
-                                                                    <UploadCloud className="mr-2 h-4 w-4" /> Upload
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => statusMutation.mutate({ id: template._id, status: template.status === 'active' ? 'inactive' : 'active' })}>
-                                                                    Mark {template.status === 'active' ? 'Inactive' : 'Active'}
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => deleteMutation.mutate(template._id)}>
-                                                                    Delete Template
-                                                                </DropdownMenuItem>
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <CardDescription className="text-xs mt-1 flex justify-between items-center">
-                                                <span>{template.fields?.length || 0} Fields • {template.access?.length || 0} Access</span>
-                                            </CardDescription>
-                                        </CardHeader>
-                                    </Card>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="flex justify-between items-center gap-2 px-4 py-3 border-t">
-                        <Pagination
-                            currentPage={page}
-                            totalItems={totalItems}
-                            itemsPerPage={perPage}
-                            onPageChange={setPage}
+        <div className="flex flex-col">
+            <div className="flex w-full flex-1 min-h-0 flex-col rounded-lg border border-border bg-card text-card-foreground shadow-xs mt-3 overflow-hidden">
+                <div className="flex justify-between items-center gap-3 border-b border-border p-4 bg-card">
+                    <div className="w-full max-w-[400px]">
+                        <Input
+                            id="search-template"
+                            type="search"
+                            placeholder="Search templates..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                         />
-                        <PerPageSelect value={String(perPage)} onChange={handlePerPageChange} />
+                    </div>
+                    <div>
+                        <Button
+                            type="button"
+                            className="w-full cursor-pointer shadow-xs"
+                            variant="default"
+                            onClick={() => router.push("/admin/templates/newtemplate")}
+                        >
+                            Add Template
+                        </Button>
                     </div>
                 </div>
-            </div>
 
-        </>
-    )
+                <div className="w-full p-4 min-h-[calc(100vh-312px)] max-h-[calc(100vh-312px)] overflow-y-auto">
+                    {isLoading ? (
+                        <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                            Loading templates...
+                        </div>
+                    ) : templates.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground gap-2">
+                            <Inbox className="h-8 w-8 text-muted-foreground/60" />
+                            <p className="font-medium text-foreground">No templates found</p>
+                            <p className="text-xs text-muted-foreground">Click &apos;Add Template&apos; to create one.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            {templates.map((template: any) => (
+                                <Card
+                                    key={template._id}
+                                    className="overflow-hidden border border-border bg-card text-card-foreground hover:border-primary/50 transition-all cursor-pointer group shadow-xs"
+                                    onClick={() => router.push(`/admin/templates/${template._id}`)}
+                                >
+                                    <div className="h-32 bg-muted/50 flex items-center justify-center border-b border-border relative">
+                                        {template.image ? (
+                                            <img
+                                                src={template.image}
+                                                alt={template.name}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <FileStack className="h-10 w-10 text-muted-foreground/50" />
+                                        )}
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-xs">
+                                            <span className="text-white font-medium text-sm flex items-center gap-2">
+                                                <Eye className="w-4 h-4" /> View Template
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <CardHeader className="p-4">
+                                        <div className="flex justify-between items-start gap-2">
+                                            <CardTitle className="text-sm font-semibold truncate group-hover:text-primary transition-colors">
+                                                {template.name || "Untitled Template"}
+                                            </CardTitle>
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                <Badge variant={template.status === 'active' ? 'default' : 'secondary'} className="text-[10px] py-0.5 px-1.5 rounded-sm capitalize">
+                                                    {template.status}
+                                                </Badge>
+                                                <div onClick={(e) => e.stopPropagation()}>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground">
+                                                                <span className="sr-only">Open menu</span>
+                                                                <MoreVertical className="h-3.5 w-3.5" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem onClick={() => router.push(`/admin/templates/${template._id}/upload`)}>
+                                                                <UploadCloud className="mr-2 h-4 w-4" /> Upload Record
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => statusMutation.mutate({ id: template._id, status: template.status === 'active' ? 'inactive' : 'active' })}>
+                                                                Mark {template.status === 'active' ? 'Inactive' : 'Active'}
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => deleteMutation.mutate(template._id)}>
+                                                                Delete Template
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <CardDescription className="text-xs mt-1.5 flex justify-between items-center text-muted-foreground">
+                                            <span>{template.fields?.length || 0} Fields • {template.access?.length || 0} Access</span>
+                                        </CardDescription>
+                                    </CardHeader>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex justify-between items-center gap-2 px-4 py-3 border-t border-border bg-card">
+                    <Pagination
+                        currentPage={page}
+                        totalItems={totalItems}
+                        itemsPerPage={perPage}
+                        onPageChange={setPage}
+                    />
+                    <PerPageSelect value={String(perPage)} onChange={handlePerPageChange} />
+                </div>
+            </div>
+        </div>
+    );
 }

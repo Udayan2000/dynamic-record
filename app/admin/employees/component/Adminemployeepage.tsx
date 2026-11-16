@@ -48,9 +48,6 @@ import { Pagination, PerPageSelect } from "@/components/ui/pagination";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { employeeService } from "@/services/employee-services";
 import { TableSkeleton } from "@/components/ui/tableskeleton";
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 type EmployeeStatus = "active" | "inactive";
 
@@ -58,12 +55,11 @@ interface Employee {
     id: string;
     name: string;
     email: string;
-    //   department: string;
     adress: string;
     recordsThisMonth: number;
     pendingReview: boolean;
     status: EmployeeStatus;
-    lastActive: string; // ISO date string
+    lastActive: string;
 }
 
 interface ActivityItem {
@@ -73,11 +69,6 @@ interface ActivityItem {
     detail: string;
     timestamp: string;
 }
-
-// ---------------------------------------------------------------------------
-// Seed data — replace with a fetch() / server action call in production.
-// Everything below is driven off this state, nothing is hard-coded in JSX.
-// ---------------------------------------------------------------------------
 
 const INITIAL_EMPLOYEES: Employee[] = [
     { id: "e1", name: "Ananya Roy", email: "ananya.roy@company.com", adress: "Tarakeswar,Hooghly", recordsThisMonth: 42, pendingReview: true, status: "active", lastActive: "2026-07-24T09:12:00Z" },
@@ -97,10 +88,6 @@ const INITIAL_ACTIVITY: ActivityItem[] = [
 
 const ACTIVE_TEMPLATES_COUNT = 14;
 
-// ---------------------------------------------------------------------------
-// Small helpers
-// ---------------------------------------------------------------------------
-
 function formatDateTime(iso: string) {
     return new Date(iso).toLocaleString("en-IN", {
         day: "2-digit",
@@ -117,14 +104,14 @@ function StatusBadge({ status }: { status: EmployeeStatus }) {
             className={cn(
                 "rounded-full px-2.5 py-0.5 text-xs font-medium border",
                 status === "active"
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                    : "bg-zinc-100 text-zinc-500 border-zinc-200"
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/50"
+                    : "bg-muted text-muted-foreground border-border"
             )}
         >
             <span
                 className={cn(
                     "mr-1.5 inline-block h-1.5 w-1.5 rounded-full",
-                    status === "active" ? "bg-emerald-500" : "bg-zinc-400"
+                    status === "active" ? "bg-emerald-500" : "bg-muted-foreground"
                 )}
             />
             {status === "active" ? "Active" : "Inactive"}
@@ -132,20 +119,15 @@ function StatusBadge({ status }: { status: EmployeeStatus }) {
     );
 }
 
-/** Keeps a panel at a fixed, full height whether or not it has data. */
 function EmptyState({ label }: { label: string }) {
     return (
         <div className="flex h-full min-h-[260px] flex-col items-center justify-center gap-2 text-center">
-            <Inbox className="h-8 w-8 text-zinc-300" />
-            <p className="text-sm font-medium text-zinc-500">{label}</p>
-            <p className="text-xs text-zinc-400">Nothing to show here yet.</p>
+            <Inbox className="h-8 w-8 text-muted-foreground/60" />
+            <p className="text-sm font-medium text-foreground">{label}</p>
+            <p className="text-xs text-muted-foreground">Nothing to show here yet.</p>
         </div>
     );
 }
-
-// ---------------------------------------------------------------------------
-// Main page
-// ---------------------------------------------------------------------------
 
 export default function Adminemployeepage() {
     const [activity] = useState<ActivityItem[]>(INITIAL_ACTIVITY);
@@ -198,16 +180,6 @@ export default function Adminemployeepage() {
         onMutate: async (newEmp) => {
             await queryClient.cancelQueries({ queryKey: ["employees"] });
             const previousData = queryClient.getQueryData(["employees"]);
-            
-            queryClient.setQueriesData({ queryKey: ["employees"] }, (old: any) => {
-                if (!old) return old;
-                return {
-                    ...old,
-                    employees: old.employees.map((emp: any) => 
-                        emp._id === newEmp.id ? { ...emp, ...newEmp.payload } : emp
-                    )
-                };
-            });
             setEditTarget(null);
             return { previousData };
         },
@@ -226,7 +198,6 @@ export default function Adminemployeepage() {
         onMutate: async (id) => {
             await queryClient.cancelQueries({ queryKey: ["employees"] });
             const previousData = queryClient.getQueryData(["employees"]);
-            
             queryClient.setQueriesData({ queryKey: ["employees"] }, (old: any) => {
                 if (!old) return old;
                 return {
@@ -280,19 +251,6 @@ export default function Adminemployeepage() {
         setPage(1);
     };
 
-    // Stats derived live from employee state — nothing here is hard-coded.
-    const stats = useMemo(() => {
-        const totalEmployees = employees.length;
-        const recordsThisMonth = employees.reduce((sum, e) => sum + e.recordsThisMonth, 0);
-        const pendingReview = employees.filter((e) => e.pendingReview).length;
-        return [
-            { label: "Total employees", value: String(totalEmployees), icon: Users },
-            { label: "Records this month", value: String(recordsThisMonth), icon: FolderOpenDot },
-            { label: "Active templates", value: String(ACTIVE_TEMPLATES_COUNT), icon: FileStack },
-            { label: "Pending review", value: String(pendingReview), icon: AlertCircle },
-        ];
-    }, [employees]);
-
     function openEdit(emp: Employee) {
         setEditTarget(emp);
         setEditDraft({ name: emp.name, email: emp.email, adress: emp.adress });
@@ -332,15 +290,9 @@ export default function Adminemployeepage() {
 
     return (
         <div className="flex flex-col">
-            {/* ---------------------------------------------------------------- */}
-            {/* Stats + employee table                                           */}
-            {/* ---------------------------------------------------------------- */}
-
-            <div className="flex w-full flex-1 min-h-0 flex-col rounded-[10px] border border-[#bec1c7a1] bg-white mt-4">
-
-                <div className="flex flex-col sm:flex-row justify-between gap-2 border-b px-4 py-3">
+            <div className="flex w-full flex-1 min-h-0 flex-col rounded-lg border border-border bg-card text-card-foreground shadow-xs mt-3 overflow-hidden">
+                <div className="flex flex-col sm:flex-row justify-between gap-3 border-b border-border p-4 bg-card">
                     <div className="w-full max-w-[400px]">
-                        {/* <Input id="employe_search" type="name" placeholder="Search Employees..." /> */}
                         <Input
                             type="search"
                             placeholder="Search employees..."
@@ -352,29 +304,28 @@ export default function Adminemployeepage() {
                             }}
                         />
                     </div>
-                    <div className="">
-                        <Button type="submit" className="w-full cursor-pointer" variant="default" onClick={() => router.push("/admin/employees/addemployee")}>
+                    <div>
+                        <Button type="button" className="w-full cursor-pointer shadow-xs" variant="default" onClick={() => router.push("/admin/employees/addemployee")}>
                             Add Employee
                         </Button>
                     </div>
                 </div>
 
-                {/* Employee table — scrolls both ways so it never breaks layout */}
-                <div className="grid w-full p-1">
-                    <div className="h-[calc(100vh-290px)] overflow-y-auto overflow-x-auto w-full">
-                        <table className="w-full text-sm whitespace-nowrap min-w-[800px]">
-                            <thead className="sticky top-0 z-10 bg-[#e7ecf7] text-left text-xs uppercase tracking-wide text-zinc-500">
+                <div className="w-full">
+                    <div className="h-[calc(100vh-312px)] overflow-y-auto overflow-x-auto w-full relative table-scrollbar">
+                        <table className="w-full text-sm whitespace-nowrap min-w-[850px] border-collapse">
+                            <thead className="sticky top-0 z-20 bg-muted border-b border-border shadow-xs">
                                 <tr>
-                                    <th className="px-3 py-2.5 font-medium">Name</th>
-                                    <th className="px-3 py-2.5 font-medium">Email</th>
-                                    <th className="px-3 py-2.5 font-medium">Address</th>
-                                    <th className="px-3 py-2.5 font-medium">Records</th>
-                                    <th className="px-3 py-2.5 font-medium">Status</th>
-                                    <th className="px-3 py-2.5 font-medium">Last active</th>
-                                    <th className="px-3 py-2.5 text-right font-medium">Actions</th>
+                                    <th className="px-5 py-3.5 font-semibold text-xs uppercase tracking-wider text-muted-foreground bg-muted sticky top-0 text-left">Name</th>
+                                    <th className="px-5 py-3.5 font-semibold text-xs uppercase tracking-wider text-muted-foreground bg-muted sticky top-0 text-left">Email</th>
+                                    <th className="px-5 py-3.5 font-semibold text-xs uppercase tracking-wider text-muted-foreground bg-muted sticky top-0 text-left">Address</th>
+                                    <th className="px-5 py-3.5 font-semibold text-xs uppercase tracking-wider text-muted-foreground bg-muted sticky top-0 text-left">Records</th>
+                                    <th className="px-5 py-3.5 font-semibold text-xs uppercase tracking-wider text-muted-foreground bg-muted sticky top-0 text-left">Status</th>
+                                    <th className="px-5 py-3.5 font-semibold text-xs uppercase tracking-wider text-muted-foreground bg-muted sticky top-0 text-left">Last active</th>
+                                    <th className="px-5 py-3.5 font-semibold text-xs uppercase tracking-wider text-muted-foreground bg-muted sticky top-0 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="divide-y divide-border/60 bg-card">
                                 {isLoading ? (
                                     <TableSkeleton columns={EMPLOYEE_SKELETON_COLUMNS} />
                                 ) : employees.length === 0 ? (
@@ -387,28 +338,28 @@ export default function Adminemployeepage() {
                                     employees.map((emp) => (
                                         <tr
                                             key={emp.id}
-                                            className="border-b border-[#f1f5fe] hover:bg-[#fafbff] transition-colors"
+                                            className="hover:bg-muted/40 transition-colors"
                                         >
-                                            <td className="px-3 py-2.5">
-                                                <div className="font-medium text-zinc-800">{emp.name}</div>
+                                            <td className="px-5 py-3.5">
+                                                <div className="font-medium text-foreground">{emp.name}</div>
                                             </td>
-                                            <td className="px-3 py-2.5 text-zinc-600">{emp.email}</td>
-                                            <td className="px-3 py-2.5 text-zinc-600">{emp.adress}</td>
-                                            <td className="px-3 py-2.5 text-zinc-600">{emp.recordsThisMonth}</td>
-                                            <td className="px-3 py-2.5">
+                                            <td className="px-5 py-3.5 text-muted-foreground">{emp.email}</td>
+                                            <td className="px-5 py-3.5 text-muted-foreground">{emp.adress}</td>
+                                            <td className="px-5 py-3.5 text-muted-foreground font-medium">{emp.recordsThisMonth}</td>
+                                            <td className="px-5 py-3.5">
                                                 <StatusBadge status={emp.status} />
                                             </td>
-                                            <td className="px-3 py-2.5 text-zinc-500">
+                                            <td className="px-5 py-3.5 text-muted-foreground text-xs">
                                                 {formatDateTime(emp.lastActive)}
                                             </td>
-                                            <td className="px-3 py-2.5">
+                                            <td className="px-5 py-3.5">
                                                 <div className="flex items-center justify-end">
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
-                                                                className="h-8 w-8 text-zinc-500 hover:text-zinc-800"
+                                                                className="h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer"
                                                             >
                                                                 <span className="sr-only">Open menu</span>
                                                                 <MoreHorizontal className="h-4 w-4" />
@@ -416,11 +367,11 @@ export default function Adminemployeepage() {
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end">
                                                             <DropdownMenuItem onSelect={() => setTimeout(() => setViewTarget(emp), 50)} className="cursor-pointer">
-                                                                <Eye className="mr-2 h-4 w-4 text-zinc-500" />
+                                                                <Eye className="mr-2 h-4 w-4 text-muted-foreground" />
                                                                 View
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem onSelect={() => setTimeout(() => openEdit(emp), 50)} className="cursor-pointer">
-                                                                <Pencil className="mr-2 h-4 w-4 text-zinc-500" />
+                                                                <Pencil className="mr-2 h-4 w-4 text-muted-foreground" />
                                                                 Edit
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem onSelect={() => setTimeout(() => setStatusTarget(emp), 50)} className="cursor-pointer">
@@ -436,7 +387,7 @@ export default function Adminemployeepage() {
                                                                     </>
                                                                 )}
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onSelect={() => setTimeout(() => setDeleteTarget(emp), 50)} className="text-red-600 focus:text-red-600 cursor-pointer">
+                                                            <DropdownMenuItem onSelect={() => setTimeout(() => setDeleteTarget(emp), 50)} className="text-destructive focus:text-destructive cursor-pointer">
                                                                 <Trash2 className="mr-2 h-4 w-4" />
                                                                 Delete
                                                             </DropdownMenuItem>
@@ -452,7 +403,7 @@ export default function Adminemployeepage() {
                     </div>
                 </div>
 
-                <div className="flex justify-between items-center gap-2 px-4 py-3 border-t">
+                <div className="flex justify-between items-center gap-2 px-4 py-3 border-t border-border bg-card">
                     <Pagination
                         currentPage={page}
                         totalItems={totalItems}
@@ -463,9 +414,7 @@ export default function Adminemployeepage() {
                 </div>
             </div>
 
-            {/* ---------------------------------------------------------------- */}
-            {/* View dialog                                                       */}
-            {/* ---------------------------------------------------------------- */}
+            {/* View dialog */}
             <Dialog open={!!viewTarget} onOpenChange={(open) => !open && setViewTarget(null)}>
                 <DialogContent>
                     <DialogHeader>
@@ -475,29 +424,27 @@ export default function Adminemployeepage() {
                     {viewTarget && (
                         <div className="grid grid-cols-2 gap-3 text-sm">
                             <div>
-                                <div className="text-xs text-zinc-400">Address</div>
-                                <div className="text-zinc-800">{viewTarget.adress}</div>
+                                <div className="text-xs text-muted-foreground mb-1">Address</div>
+                                <div className="text-foreground font-medium">{viewTarget.adress}</div>
                             </div>
                             <div>
-                                <div className="text-xs text-zinc-400">Records this month</div>
-                                <div className="text-zinc-800">{viewTarget.recordsThisMonth}</div>
+                                <div className="text-xs text-muted-foreground mb-1">Records this month</div>
+                                <div className="text-foreground font-medium">{viewTarget.recordsThisMonth}</div>
                             </div>
                             <div>
-                                <div className="text-xs text-zinc-400">Status</div>
+                                <div className="text-xs text-muted-foreground mb-1">Status</div>
                                 <StatusBadge status={viewTarget.status} />
                             </div>
                             <div>
-                                <div className="text-xs text-zinc-400">Last active</div>
-                                <div className="text-zinc-800">{formatDateTime(viewTarget.lastActive)}</div>
+                                <div className="text-xs text-muted-foreground mb-1">Last active</div>
+                                <div className="text-foreground font-medium">{formatDateTime(viewTarget.lastActive)}</div>
                             </div>
                         </div>
                     )}
                 </DialogContent>
             </Dialog>
 
-            {/* ---------------------------------------------------------------- */}
-            {/* Edit dialog                                                       */}
-            {/* ---------------------------------------------------------------- */}
+            {/* Edit dialog */}
             <Dialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)}>
                 <DialogContent>
                     <DialogHeader>
@@ -543,9 +490,7 @@ export default function Adminemployeepage() {
                 </DialogContent>
             </Dialog>
 
-            {/* ---------------------------------------------------------------- */}
-            {/* Delete confirmation                                               */}
-            {/* ---------------------------------------------------------------- */}
+            {/* Delete confirmation */}
             <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -557,7 +502,7 @@ export default function Adminemployeepage() {
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
-                            className="bg-red-600 hover:bg-red-700"
+                            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                             onClick={confirmDelete}
                             disabled={deleteMutation.isPending}
                         >
@@ -567,9 +512,7 @@ export default function Adminemployeepage() {
                 </AlertDialogContent>
             </AlertDialog>
 
-            {/* ---------------------------------------------------------------- */}
-            {/* Activate / deactivate confirmation                                */}
-            {/* ---------------------------------------------------------------- */}
+            {/* Activate / deactivate confirmation */}
             <AlertDialog open={!!statusTarget} onOpenChange={(open) => !open && setStatusTarget(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>

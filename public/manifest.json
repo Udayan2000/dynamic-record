@@ -1,0 +1,56 @@
+{
+  "name": "Dynamic Record",
+  "short_name": "DynamicRecord",
+  "description": "Unify your data collection with dynamic templates, records, and cloud synchronization.",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["business", "productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/admin/dashboard",
+      "description": "View administrative overview"
+    },
+    {
+      "name": "Records",
+      "url": "/admin/records",
+      "description": "View submitted records"
+    },
+    {
+      "name": "Templates",
+      "url": "/admin/templates",
+      "description": "Manage dynamic templates"
+    }
+  ]
+}

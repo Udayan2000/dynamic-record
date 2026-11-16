@@ -20,11 +20,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const role = cookieStore.get("role")?.value || session.user?.role || "admin";
 
   return (
-    <div className="flex h-screen bg-[#e6ebf7] overflow-hidden">
+    <div className="flex h-screen bg-background text-foreground overflow-hidden">
       <Sidebar role={role as any} />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Topbar user={session.user} title="Admin" />
-        <main className="flex-1 bg-muted/20 pl-1 pb-1 pr-1.5 pt-0 overflow-y-auto">{children}</main>
+        <Topbar user={session.user} title="Admin Portal" />
+        <main className="flex-1 bg-background p-2 pt-0 overflow-y-auto">{children}</main>
       </div>
     </div>
   );

@@ -44,7 +44,7 @@ export function FooterCTA() {
             Join the organizations using Dynamic Record to structure their chaos and automate their Google Drive uploads.
           </p>
           <Link href="/login">
-            <Button size="lg" className="h-14 px-8 text-lg rounded-xl bg-white text-zinc-900 hover:bg-zinc-200 hover:-translate-y-1 transition-all">
+            <Button size="lg" className="h-14 px-8 text-lg rounded-[4px] bg-white text-zinc-900 hover:bg-zinc-200 hover:-translate-y-1 transition-all">
               Get Started Now <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </Link>

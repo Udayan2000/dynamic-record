@@ -57,15 +57,15 @@ export default function SettingsPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto w-full space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Settings</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Settings</h1>
         <p className="text-muted-foreground mt-2">Manage your account settings and integrations.</p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <svg viewBox="0 0 24 24" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12.01 17.561l-2.022 3.511h11.977l-1.954-3.511H12.01zM18.995 16.326L13.111 6.13H9.202l5.885 10.196h3.908zM10.871 6.13L5.05 16.21 6.94 19.5l5.885-10.197L10.871 6.13z" fill="#000000"/>
+            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-foreground" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12.01 17.561l-2.022 3.511h11.977l-1.954-3.511H12.01zM18.995 16.326L13.111 6.13H9.202l5.885 10.196h3.908zM10.871 6.13L5.05 16.21 6.94 19.5l5.885-10.197L10.871 6.13z"/>
             </svg>
             Google Drive Integration
           </CardTitle>
@@ -75,19 +75,19 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {!isEditing && hasCredentials ? (
-            <div className="rounded-lg bg-green-50 p-4 border border-green-100 flex items-start justify-between">
+            <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/40 p-4 border border-emerald-200 dark:border-emerald-800/50 flex items-start justify-between">
               <div>
-                <p className="font-medium text-green-900">Google Drive is connected</p>
-                <p className="text-sm text-green-700 mt-1">Your OAuth credentials are securely stored and ready for exports.</p>
+                <p className="font-medium text-emerald-900 dark:text-emerald-300">Google Drive is connected</p>
+                <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">Your OAuth credentials are securely stored and ready for exports.</p>
               </div>
-              <Button variant="outline" size="sm" onClick={handleEdit} className="bg-white border-green-200 text-green-700 hover:bg-green-50">
+              <Button variant="outline" size="sm" onClick={handleEdit} className="bg-card border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/50">
                 Update Keys
               </Button>
             </div>
           ) : (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="clientId" className="flex items-center gap-1.5"><Key className="w-4 h-4 text-zinc-400" /> Client ID</Label>
+                <Label htmlFor="clientId" className="flex items-center gap-1.5"><Key className="w-4 h-4 text-muted-foreground" /> Client ID</Label>
                 <Input 
                   id="clientId"
                   placeholder="Enter your Google OAuth Client ID"
@@ -96,7 +96,7 @@ export default function SettingsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="clientSecret" className="flex items-center gap-1.5"><Lock className="w-4 h-4 text-zinc-400" /> Client Secret</Label>
+                <Label htmlFor="clientSecret" className="flex items-center gap-1.5"><Lock className="w-4 h-4 text-muted-foreground" /> Client Secret</Label>
                 <Input 
                   id="clientSecret"
                   type="password"
@@ -109,7 +109,7 @@ export default function SettingsPage() {
           )}
         </CardContent>
         {isEditing || !hasCredentials ? (
-          <CardFooter className="flex justify-end gap-3 border-t bg-zinc-50/50 py-4">
+          <CardFooter className="flex justify-end gap-3 border-t border-border bg-muted/30 py-4">
             {hasCredentials && (
               <Button variant="ghost" onClick={() => setIsEditing(false)}>Cancel</Button>
             )}
