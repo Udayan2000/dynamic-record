@@ -53,7 +53,7 @@ export function Topbar({ user, title }: { user: User; title?: string }) {
   return (
     <>
       <header
-        className="flex h-14 md:h-16 items-center justify-between border-b border-border px-3.5 sm:px-6 bg-card/95 backdrop-blur-md text-card-foreground shadow-xs m-0 rounded-none md:m-2 md:rounded-lg shrink-0 z-30 select-none"
+        className="flex h-14 md:h-16 items-center justify-between border-b border-border px-3.5 sm:px-6 bg-card/95 backdrop-blur-md text-card-foreground shadow-xs m-0 rounded-none md:mt-2 md:mb-0! md:ml-2 md:mr-2 md:rounded-lg shrink-0 z-30 select-none"
         style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
       >
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">

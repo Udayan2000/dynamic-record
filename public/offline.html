@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#2563eb" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#090d16" media="(prefers-color-scheme: dark)">
   <title>Offline | Dynamic Record</title>
   <style>
     * {
@@ -10,32 +12,62 @@
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --card-border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --icon-bg: #eff6ff;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #090d16;
+        --card-bg: #0f172a;
+        --card-border: #1e293b;
+        --text: #f8fafc;
+        --text-muted: #94a3b8;
+        --primary: #3b82f6;
+        --primary-hover: #2563eb;
+        --icon-bg: rgba(59, 130, 246, 0.15);
+      }
     }
     body {
-      background-color: #f8fafc;
-      color: #0f172a;
+      background-color: var(--bg);
+      color: var(--text);
       display: flex;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
+      min-height: 100dvh;
       padding: 1.5rem;
       text-align: center;
+      touch-action: manipulation;
     }
     .card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 2.5rem 2rem;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 2.5rem 1.75rem;
       max-width: 420px;
       width: 100%;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+      animation: fadeIn 0.3s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     .icon-wrapper {
-      width: 64px;
-      height: 64px;
-      background: #eff6ff;
-      color: #2563eb;
-      border-radius: 16px;
+      width: 68px;
+      height: 68px;
+      background: var(--icon-bg);
+      color: var(--primary);
+      border-radius: 18px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -45,40 +77,83 @@
       font-size: 1.25rem;
       font-weight: 700;
       margin-bottom: 0.5rem;
-      color: #0f172a;
+      color: var(--text);
+      letter-spacing: -0.01em;
     }
     p {
       font-size: 0.875rem;
-      color: #64748b;
+      color: var(--text-muted);
       line-height: 1.5;
       margin-bottom: 1.75rem;
+    }
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
     }
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      background: #2563eb;
+      background: var(--primary);
       color: #ffffff;
-      font-weight: 500;
+      font-weight: 600;
       font-size: 0.875rem;
-      padding: 0.625rem 1.25rem;
-      border-radius: 4px;
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
       border: none;
       cursor: pointer;
       text-decoration: none;
-      transition: background 0.2s;
+      transition: all 0.2s ease;
       width: 100%;
+      user-select: none;
     }
     .btn:hover {
-      background: #1d4ed8;
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+    .btn:active {
+      transform: translateY(0);
+    }
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--card-border);
+    }
+    .btn-secondary:hover {
+      background: var(--icon-bg);
+      color: var(--primary);
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(245, 158, 11, 0.12);
+      color: #d97706;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #f59e0b;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
     }
   </style>
 </head>
 <body>
   <div class="card">
     <div class="icon-wrapper">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M1 1l22 22"/>
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="1" y1="1" x2="23" y2="23"/>
         <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
         <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
         <path d="M10.71 5.05A16 16 0 0 1 22.58 9"/>
@@ -87,9 +162,49 @@
         <line x1="12" y1="20" x2="12.01" y2="20"/>
       </svg>
     </div>
+
+    <div class="status-pill">
+      <span class="status-dot"></span>
+      <span>No Internet Connection</span>
+    </div>
+
     <h1>You are currently offline</h1>
-    <p>Please check your internet connection. Previously cached pages and form data will remain accessible.</p>
-    <button class="btn" onclick="window.location.reload()">Retry Connection</button>
+    <p>Please check your connection. Previously loaded pages and cached records remain accessible on your device.</p>
+
+    <div class="actions">
+      <button class="btn" id="retry-btn" onclick="retryConnection()">
+        Retry Connection
+      </button>
+      <button class="btn btn-secondary" onclick="window.location.href='/'">
+        Return to App Home
+      </button>
+    </div>
   </div>
+
+  <script>
+    // Automatically reload when connection returns
+    window.addEventListener('online', function() {
+      window.location.reload();
+    });
+
+    function retryConnection() {
+      const btn = document.getElementById('retry-btn');
+      btn.innerText = 'Checking Connection...';
+      btn.style.opacity = '0.7';
+      btn.disabled = true;
+
+      fetch('/', { method: 'HEAD', cache: 'no-store' })
+        .then(function() {
+          window.location.reload();
+        })
+        .catch(function() {
+          setTimeout(function() {
+            btn.innerText = 'Still Offline - Try Again';
+            btn.style.opacity = '1';
+            btn.disabled = false;
+          }, 800);
+        });
+    }
+  </script>
 </body>
 </html>

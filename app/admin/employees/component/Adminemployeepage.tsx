@@ -42,7 +42,19 @@ import {
     RotateCcw,
     Inbox,
     MoreHorizontal,
+    User,
+    Mail,
+    MapPin,
+    Clock,
+    FileText,
+    Hash,
+    Copy,
+    Check,
+    ShieldCheck,
+    Loader2,
+    Save,
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Pagination, PerPageSelect } from "@/components/ui/pagination";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -138,6 +150,15 @@ export default function Adminemployeepage() {
     const [editDraft, setEditDraft] = useState({ name: "", email: "", adress: "" });
     const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
     const [statusTarget, setStatusTarget] = useState<Employee | null>(null);
+    const [copiedId, setCopiedId] = useState(false);
+
+    const handleCopyId = (id?: string) => {
+        if (!id) return;
+        navigator.clipboard.writeText(id);
+        setCopiedId(true);
+        toast.success("Employee ID copied to clipboard");
+        setTimeout(() => setCopiedId(false), 2000);
+    };
 
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
@@ -416,77 +437,432 @@ export default function Adminemployeepage() {
 
             {/* View dialog */}
             <Dialog open={!!viewTarget} onOpenChange={(open) => !open && setViewTarget(null)}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>{viewTarget?.name}</DialogTitle>
-                        <DialogDescription>{viewTarget?.email}</DialogDescription>
-                    </DialogHeader>
-                    {viewTarget && (
-                        <div className="grid grid-cols-2 gap-3 text-sm">
-                            <div>
-                                <div className="text-xs text-muted-foreground mb-1">Address</div>
-                                <div className="text-foreground font-medium">{viewTarget.adress}</div>
+                <DialogContent className="w-[96vw] max-w-4xl max-h-[90vh] p-0 gap-0 overflow-hidden flex flex-col rounded-xl border border-border bg-card shadow-2xl">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-border bg-card/95 shrink-0 pr-12">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <div className="h-10 w-10 rounded-[4px] bg-primary/10 text-primary flex items-center justify-center shrink-0 shadow-xs">
+                                <User className="h-5 w-5" />
                             </div>
-                            <div>
-                                <div className="text-xs text-muted-foreground mb-1">Records this month</div>
-                                <div className="text-foreground font-medium">{viewTarget.recordsThisMonth}</div>
-                            </div>
-                            <div>
-                                <div className="text-xs text-muted-foreground mb-1">Status</div>
-                                <StatusBadge status={viewTarget.status} />
-                            </div>
-                            <div>
-                                <div className="text-xs text-muted-foreground mb-1">Last active</div>
-                                <div className="text-foreground font-medium">{formatDateTime(viewTarget.lastActive)}</div>
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                    <DialogTitle className="text-base sm:text-lg font-bold tracking-tight text-foreground truncate">
+                                        Employee Details
+                                    </DialogTitle>
+                                    {viewTarget && <StatusBadge status={viewTarget.status} />}
+                                </div>
+                                <DialogDescription className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2 truncate">
+                                    <span>Profile Information</span>
+                                    <span>•</span>
+                                    <span>
+                                        {viewTarget?.lastActive
+                                            ? `Last active: ${formatDateTime(viewTarget.lastActive)}`
+                                            : "Registered Employee"}
+                                    </span>
+                                </DialogDescription>
                             </div>
                         </div>
-                    )}
+                    </div>
+
+                    {/* Body */}
+                    <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-muted/15 space-y-5">
+                        {viewTarget && (
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                                {/* Left Column: Profile Card (5 cols) */}
+                                <div className="lg:col-span-5 space-y-4">
+                                    {/* Primary Profile Card */}
+                                    <div className="rounded-lg border border-border bg-card p-5 shadow-xs space-y-4">
+                                        <div className="flex items-center justify-between pb-3 border-b border-border">
+                                            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                                <User className="h-3.5 w-3.5 text-primary" /> Profile Overview
+                                            </span>
+                                            <StatusBadge status={viewTarget.status} />
+                                        </div>
+
+                                        <div className="flex flex-col items-center text-center p-3">
+                                            <div className="h-16 w-16 rounded-full bg-primary/10 text-primary font-bold text-2xl flex items-center justify-center shrink-0 border-2 border-primary/20 shadow-xs mb-3">
+                                                {viewTarget.name?.charAt(0)?.toUpperCase() || "E"}
+                                            </div>
+                                            <h3 className="font-bold text-base sm:text-lg text-foreground truncate max-w-full">
+                                                {viewTarget.name}
+                                            </h3>
+                                            <p className="text-xs text-muted-foreground truncate max-w-full flex items-center gap-1.5 mt-1">
+                                                <Mail className="h-3 w-3 shrink-0 text-muted-foreground/80" />
+                                                <span className="truncate">{viewTarget.email}</span>
+                                            </p>
+                                        </div>
+
+                                        {/* Employee ID Chip */}
+                                        <div className="rounded-lg border border-border/70 bg-muted/30 p-3 space-y-1.5">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                                                    <Hash className="h-3 w-3" /> Employee ID
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleCopyId(viewTarget.id)}
+                                                    className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline cursor-pointer"
+                                                >
+                                                    {copiedId ? (
+                                                        <>
+                                                            <Check className="h-3 w-3 text-emerald-600" />
+                                                            <span className="text-emerald-600">Copied</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Copy className="h-3 w-3" />
+                                                            <span>Copy</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                            <p className="font-mono text-xs font-medium text-foreground truncate select-all">
+                                                {viewTarget.id}
+                                            </p>
+                                        </div>
+
+                                        {/* Quick Metrics */}
+                                        <div className="grid grid-cols-2 gap-2.5 pt-1">
+                                            <div className="rounded-lg bg-muted/40 p-3 border border-border/50 text-center">
+                                                <span className="text-[10px] uppercase font-semibold text-muted-foreground block mb-1">
+                                                    Records This Month
+                                                </span>
+                                                <div className="flex items-center justify-center gap-1.5">
+                                                    <FileText className="h-4 w-4 text-primary" />
+                                                    <span className="text-base font-bold text-foreground">
+                                                        {viewTarget.recordsThisMonth}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="rounded-lg bg-muted/40 p-3 border border-border/50 text-center">
+                                                <span className="text-[10px] uppercase font-semibold text-muted-foreground block mb-1">
+                                                    Account Status
+                                                </span>
+                                                <div className="flex items-center justify-center gap-1.5">
+                                                    <span
+                                                        className={cn(
+                                                            "h-2 w-2 rounded-full",
+                                                            viewTarget.status === "active" ? "bg-emerald-500" : "bg-muted-foreground"
+                                                        )}
+                                                    />
+                                                    <span className="text-sm font-semibold capitalize text-foreground">
+                                                        {viewTarget.status}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Right Column: Detailed Information (7 cols) */}
+                                <div className="lg:col-span-7">
+                                    <div className="rounded-lg border border-border bg-card p-5 shadow-xs space-y-4 h-full flex flex-col justify-between">
+                                        <div>
+                                            <div className="flex items-center justify-between pb-3.5 border-b border-border">
+                                                <div>
+                                                    <h3 className="font-semibold text-sm sm:text-base text-foreground">
+                                                        Employee Information
+                                                    </h3>
+                                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                                        Account details and contact information
+                                                    </p>
+                                                </div>
+                                                <Badge variant="outline" className="text-xs border-border shrink-0">
+                                                    Profile Data
+                                                </Badge>
+                                            </div>
+
+                                            {/* Info Fields Grid */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-4">
+                                                <div className="rounded-lg border border-border/60 bg-muted/20 p-3.5 space-y-1">
+                                                    <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                                                        <User className="h-3.5 w-3.5 text-primary" /> Full Name
+                                                    </span>
+                                                    <p className="text-sm font-semibold text-foreground truncate">
+                                                        {viewTarget.name || "—"}
+                                                    </p>
+                                                </div>
+
+                                                <div className="rounded-lg border border-border/60 bg-muted/20 p-3.5 space-y-1">
+                                                    <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                                                        <Mail className="h-3.5 w-3.5 text-primary" /> Email Address
+                                                    </span>
+                                                    <p className="text-sm font-semibold text-foreground truncate">
+                                                        {viewTarget.email || "—"}
+                                                    </p>
+                                                </div>
+
+                                                <div className="rounded-lg border border-border/60 bg-muted/20 p-3.5 space-y-1 sm:col-span-2">
+                                                    <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                                                        <MapPin className="h-3.5 w-3.5 text-primary" /> Address / Location
+                                                    </span>
+                                                    <p className="text-sm font-semibold text-foreground break-words">
+                                                        {viewTarget.adress || "Not provided"}
+                                                    </p>
+                                                </div>
+
+                                                <div className="rounded-lg border border-border/60 bg-muted/20 p-3.5 space-y-1">
+                                                    <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                                                        <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Access Status
+                                                    </span>
+                                                    <div className="pt-0.5 flex items-center gap-2">
+                                                        <StatusBadge status={viewTarget.status} />
+                                                        <span className="text-xs text-muted-foreground">
+                                                            {viewTarget.status === "active" ? "Access granted" : "Access suspended"}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="rounded-lg border border-border/60 bg-muted/20 p-3.5 space-y-1">
+                                                    <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                                                        <Clock className="h-3.5 w-3.5 text-primary" /> Last Active
+                                                    </span>
+                                                    <p className="text-sm font-semibold text-foreground truncate">
+                                                        {formatDateTime(viewTarget.lastActive)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4 border-t border-border/60 flex items-center justify-between text-xs text-muted-foreground">
+                                            <span>Registered in organization</span>
+                                            <span className="font-mono text-[11px]">System Account</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="px-5 sm:px-6 py-3.5 border-t border-border bg-card shrink-0 flex flex-col sm:flex-row items-center justify-end gap-2.5">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setViewTarget(null)}
+                            className="cursor-pointer flex-1 sm:flex-initial"
+                        >
+                            Close
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="default"
+                            onClick={() => {
+                                const target = viewTarget;
+                                setViewTarget(null);
+                                if (target) {
+                                    setTimeout(() => openEdit(target), 100);
+                                }
+                            }}
+                            className="cursor-pointer flex-1 sm:flex-initial"
+                        >
+                            <Pencil className="h-4 w-4 mr-1.5" /> Edit Employee
+                        </Button>
+                    </div>
                 </DialogContent>
             </Dialog>
 
             {/* Edit dialog */}
             <Dialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Edit employee</DialogTitle>
-                        <DialogDescription>Update details for {editTarget?.name}.</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-3">
-                        <div className="grid gap-1.5">
-                            <Label htmlFor="name">Name</Label>
-                            <Input
-                                id="name"
-                                value={editDraft.name}
-                                onChange={(e) => setEditDraft((d) => ({ ...d, name: e.target.value }))}
-                            />
-                        </div>
-                        <div className="grid gap-1.5">
-                            <Label htmlFor="email">Email</Label>
-                            <Input
-                                id="email"
-                                value={editDraft.email}
-                                onChange={(e) => setEditDraft((d) => ({ ...d, email: e.target.value }))}
-                            />
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="grid gap-1.5">
-                                <Label htmlFor="role">Address</Label>
-                                <Input
-                                    id="role"
-                                    value={editDraft.adress}
-                                    onChange={(e) => setEditDraft((d) => ({ ...d, adress: e.target.value }))}
-                                />
+                <DialogContent className="w-[96vw] max-w-4xl max-h-[90vh] p-0 gap-0 overflow-hidden flex flex-col rounded-xl border border-border bg-card shadow-2xl">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-border bg-card/95 shrink-0 pr-12">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <div className="h-10 w-10 rounded-[4px] bg-primary/10 text-primary flex items-center justify-center shrink-0 shadow-xs">
+                                <Pencil className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                    <DialogTitle className="text-base sm:text-lg font-bold tracking-tight text-foreground truncate">
+                                        Edit Employee Profile
+                                    </DialogTitle>
+                                    {editTarget && <StatusBadge status={editTarget.status} />}
+                                </div>
+                                <DialogDescription className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2 truncate">
+                                    <span>Update account details and personal information</span>
+                                    <span>•</span>
+                                    <span>{editTarget?.name || "Employee"}</span>
+                                </DialogDescription>
                             </div>
                         </div>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setEditTarget(null)}>
+
+                    {/* Body */}
+                    <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-muted/15 space-y-5">
+                        {editTarget && (
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                                {/* Left Column: Current Profile Summary (5 cols) */}
+                                <div className="lg:col-span-5 space-y-4">
+                                    <div className="rounded-lg border border-border bg-card p-5 shadow-xs space-y-4">
+                                        <div className="flex items-center justify-between pb-3 border-b border-border">
+                                            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                                <User className="h-3.5 w-3.5 text-primary" /> Profile Preview
+                                            </span>
+                                            <StatusBadge status={editTarget.status} />
+                                        </div>
+
+                                        <div className="flex flex-col items-center text-center p-3">
+                                            <div className="h-16 w-16 rounded-full bg-primary/10 text-primary font-bold text-2xl flex items-center justify-center shrink-0 border-2 border-primary/20 shadow-xs mb-3">
+                                                {(editDraft.name || editTarget.name)?.charAt(0)?.toUpperCase() || "E"}
+                                            </div>
+                                            <h3 className="font-bold text-base sm:text-lg text-foreground truncate max-w-full">
+                                                {editDraft.name || editTarget.name || "Employee Name"}
+                                            </h3>
+                                            <p className="text-xs text-muted-foreground truncate max-w-full flex items-center gap-1.5 mt-1">
+                                                <Mail className="h-3 w-3 shrink-0 text-muted-foreground/80" />
+                                                <span className="truncate">{editDraft.email || editTarget.email}</span>
+                                            </p>
+                                        </div>
+
+                                        {/* Employee ID Chip */}
+                                        <div className="rounded-lg border border-border/70 bg-muted/30 p-3 space-y-1.5">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                                                    <Hash className="h-3 w-3" /> Employee ID
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleCopyId(editTarget.id)}
+                                                    className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline cursor-pointer"
+                                                >
+                                                    {copiedId ? (
+                                                        <>
+                                                            <Check className="h-3 w-3 text-emerald-600" />
+                                                            <span className="text-emerald-600">Copied</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Copy className="h-3 w-3" />
+                                                            <span>Copy</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                            <p className="font-mono text-xs font-medium text-foreground truncate select-all">
+                                                {editTarget.id}
+                                            </p>
+                                        </div>
+
+                                        {/* System Info Box */}
+                                        <div className="rounded-lg border border-border/60 bg-muted/20 p-3.5 space-y-2">
+                                            <div className="flex items-start gap-2">
+                                                <AlertCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                                    Changes to employee information will immediately take effect and update system records.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Right Column: Form Inputs (7 cols) */}
+                                <div className="lg:col-span-7">
+                                    <div className="rounded-lg border border-border bg-card p-5 sm:p-6 shadow-xs space-y-5 h-full flex flex-col justify-between">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between pb-3.5 border-b border-border">
+                                                <div>
+                                                    <h3 className="font-semibold text-sm sm:text-base text-foreground">
+                                                        Edit Information
+                                                    </h3>
+                                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                                        Modify the fields below to update employee details
+                                                    </p>
+                                                </div>
+                                                <Badge variant="outline" className="text-xs border-border shrink-0">
+                                                    Required *
+                                                </Badge>
+                                            </div>
+
+                                            <div className="space-y-4 pt-1">
+                                                {/* Full Name */}
+                                                <div className="space-y-1.5">
+                                                    <Label htmlFor="edit-name" className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                                                        <User className="h-3.5 w-3.5 text-primary" /> Full Name <span className="text-destructive">*</span>
+                                                    </Label>
+                                                    <Input
+                                                        id="edit-name"
+                                                        value={editDraft.name}
+                                                        onChange={(e) => setEditDraft((d) => ({ ...d, name: e.target.value }))}
+                                                        placeholder="Enter employee full name"
+                                                        className="h-10 text-sm bg-background border-border shadow-xs focus-visible:ring-1"
+                                                    />
+                                                </div>
+
+                                                {/* Email Address */}
+                                                <div className="space-y-1.5">
+                                                    <Label htmlFor="edit-email" className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                                                        <Mail className="h-3.5 w-3.5 text-primary" /> Email Address <span className="text-destructive">*</span>
+                                                    </Label>
+                                                    <Input
+                                                        id="edit-email"
+                                                        type="email"
+                                                        value={editDraft.email}
+                                                        onChange={(e) => setEditDraft((d) => ({ ...d, email: e.target.value }))}
+                                                        placeholder="e.g. employee@company.com"
+                                                        className="h-10 text-sm bg-background border-border shadow-xs focus-visible:ring-1"
+                                                    />
+                                                </div>
+
+                                                {/* Address / Location */}
+                                                <div className="space-y-1.5">
+                                                    <Label htmlFor="edit-address" className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                                                        <MapPin className="h-3.5 w-3.5 text-primary" /> Address / Location
+                                                    </Label>
+                                                    <Input
+                                                        id="edit-address"
+                                                        value={editDraft.adress}
+                                                        onChange={(e) => setEditDraft((d) => ({ ...d, adress: e.target.value }))}
+                                                        placeholder="Enter office address or department location"
+                                                        className="h-10 text-sm bg-background border-border shadow-xs focus-visible:ring-1"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4 border-t border-border/60 flex items-center justify-between text-xs text-muted-foreground">
+                                            <span className="flex items-center gap-1.5">
+                                                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                                                Account credentials and permissions are preserved
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="px-5 sm:px-6 py-3.5 border-t border-border bg-card shrink-0 flex flex-col sm:flex-row items-center justify-end gap-2.5">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setEditTarget(null)}
+                            disabled={editMutation.isPending}
+                            className="cursor-pointer flex-1 sm:flex-initial"
+                        >
                             Cancel
                         </Button>
-                        <Button onClick={saveEdit} disabled={editMutation.isPending}>
-                            {editMutation.isPending ? "Saving..." : "Save changes"}
+                        <Button
+                            type="button"
+                            variant="default"
+                            onClick={saveEdit}
+                            disabled={editMutation.isPending || !editDraft.name.trim() || !editDraft.email.trim()}
+                            className="cursor-pointer flex-1 sm:flex-initial"
+                        >
+                            {editMutation.isPending ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                                    Saving Changes...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="h-4 w-4 mr-1.5" />
+                                    Save Changes
+                                </>
+                            )}
                         </Button>
-                    </DialogFooter>
+                    </div>
                 </DialogContent>
             </Dialog>
 

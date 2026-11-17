@@ -74,7 +74,7 @@ export default function RecordsPage() {
                 />
               </div>
             </div>
-            <div className="w-full h-[calc(100vh-287px)] overflow-y-auto overflow-x-auto relative table-scrollbar">
+            <div className="w-full  h-[calc(100vh-322px)] overflow-y-auto overflow-x-auto relative table-scrollbar">
               <table className="w-full text-left text-sm text-foreground whitespace-nowrap min-w-[700px] border-collapse">
                 <thead className="sticky top-0 z-20 bg-muted border-b border-border shadow-xs">
                   <tr>

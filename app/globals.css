@@ -127,6 +127,14 @@ body {
   background: hsl(var(--muted-foreground) / 0.4);
 }
 
+/* Safe area insets for notches & home indicators on mobile devices */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+}
+
 /* PWA Native Mobile App Enhancements */
 html,
 body {
@@ -155,4 +163,11 @@ textarea,
 [contenteditable="true"] {
   user-select: text;
   -webkit-user-select: text;
+}
+
+/* Native App Standalone Mode refinements */
+@media all and (display-mode: standalone) {
+  html, body {
+    overscroll-behavior: none;
+  }
 }
