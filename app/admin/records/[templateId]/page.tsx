@@ -837,7 +837,7 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
   };
 
   return (
-    <section className="w-full h-full bg-card border border-border rounded-lg p-3 sm:p-4 shadow-xs h-full text-card-foreground">
+    <section className="w-full  bg-card border border-border rounded-lg p-3 sm:p-4 shadow-xs text-card-foreground">
 
       <div className="flex items-center gap-2.5 sm:gap-3">
         <Button variant="ghost" size="icon" onClick={() => router.push('/admin/records')} className="shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted">
@@ -1000,38 +1000,14 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 px-3 sm:px-4 py-3 border-t border-border bg-card">
-            {/* Mobile View (< 640px) */}
-            <div className="flex flex-col gap-2.5 sm:hidden w-full">
-              {/* Row 1: Summary of results and Rows per page selector */}
-              <div className="flex items-center justify-between gap-2 w-full">
-                <p className="text-xs text-muted-foreground truncate">
-                  Showing <span className="font-semibold text-foreground">{totalItems > 0 ? (page - 1) * perPage + 1 : 0}</span>–<span className="font-semibold text-foreground">{Math.min(page * perPage, totalItems)}</span> of <span className="font-semibold text-foreground">{totalItems}</span>
-                </p>
-                <PerPageSelect value={perPage} onChange={handlePerPageChange} label="Rows" />
-              </div>
-
-              {/* Row 2: Touch-friendly mobile pagination controls */}
-              <Pagination
-                currentPage={page}
-                totalItems={totalItems}
-                itemsPerPage={perPage}
-                onPageChange={setPage}
-                showSummary={false}
-                className="w-full"
-              />
-            </div>
-
-            {/* Desktop View (>= 640px) */}
-            <div className="hidden sm:flex sm:items-center sm:justify-between w-full gap-3">
-              <Pagination
-                currentPage={page}
-                totalItems={totalItems}
-                itemsPerPage={perPage}
-                onPageChange={setPage}
-              />
-              <PerPageSelect value={perPage} onChange={handlePerPageChange} />
-            </div>
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 px-3 sm:px-4 py-3 border-t border-border bg-card">
+            <Pagination
+              currentPage={page}
+              totalItems={totalItems}
+              itemsPerPage={perPage}
+              onPageChange={setPage}
+            />
+            <PerPageSelect value={perPage} onChange={handlePerPageChange} />
           </div>
 
         </div>
