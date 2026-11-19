@@ -43,6 +43,13 @@ import {
   Upload,
   User as UserIcon,
   X,
+  ChevronDown,
+  Tag,
+  Type,
+  AlignLeft,
+  ListFilter,
+  Radio as RadioIcon,
+  CheckSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -61,12 +68,48 @@ import { templatesApi } from "@/services/templatebuilder-services";
 // Constants
 // ---------------------------------------------------------------------------
 
-const FIELD_TYPES: { value: TemplateFieldType; label: string; needsOptions: boolean }[] = [
-  { value: "text", label: "Text input", needsOptions: false },
-  { value: "textarea", label: "Text area", needsOptions: false },
-  { value: "dropdown", label: "Dropdown", needsOptions: true },
-  { value: "radio", label: "Radio buttons", needsOptions: true },
-  { value: "multiselect", label: "Multi select", needsOptions: true },
+const FIELD_TYPES: {
+  value: TemplateFieldType;
+  label: string;
+  description: string;
+  needsOptions: boolean;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
+  {
+    value: "text",
+    label: "Text input",
+    description: "Single-line field for short text answers (e.g. Name, Phone, ID)",
+    needsOptions: false,
+    icon: Type,
+  },
+  {
+    value: "textarea",
+    label: "Text area",
+    description: "Multi-line field for longer notes, remarks, or descriptions",
+    needsOptions: false,
+    icon: AlignLeft,
+  },
+  {
+    value: "dropdown",
+    label: "Dropdown",
+    description: "Dropdown menu where employees select one choice from a list",
+    needsOptions: true,
+    icon: ListFilter,
+  },
+  {
+    value: "radio",
+    label: "Radio buttons",
+    description: "Radio button list where employees pick one visible choice",
+    needsOptions: true,
+    icon: RadioIcon,
+  },
+  {
+    value: "multiselect",
+    label: "Multi select",
+    description: "Checkboxes allowing employees to pick multiple choices",
+    needsOptions: true,
+    icon: CheckSquare,
+  },
 ];
 
 const MIN_IMAGE_HEIGHT = 140;
@@ -199,36 +242,57 @@ function ImageCaptureField({
 // ---------------------------------------------------------------------------
 
 function FieldPreview({ field }: { field: TemplateField }) {
+  const options = Array.isArray(field.options) ? field.options : [];
   return (
     <div>
-      <Label className="text-sm text-zinc-700">
+      <Label className="text-sm font-medium text-foreground">
         {field.label || "Untitled field"}
-        {field.required && <span className="ml-1 text-red-500">*</span>}
+        {field.required && <span className="ml-1 text-destructive">*</span>}
       </Label>
       <div className="mt-1.5">
         {field.type === "text" && <Input placeholder="User input" />}
         {field.type === "textarea" && <Textarea placeholder="User input" rows={3} />}
         {field.type === "dropdown" && (
-          <select
-            className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm text-zinc-800"
-          >
-            <option>{field.options[0] || "Choose an option"}</option>
-          </select>
+          <div className="flex flex-col gap-1.5">
+            <select
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
+              defaultValue=""
+            >
+              <option value="">Select an option</option>
+              {options.map((opt, i) => (
+                <option key={i} value={opt} className="bg-popover text-popover-foreground">
+                  {opt}
+                </option>
+              ))}
+            </select>
+            {options.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-0.5">
+                {options.map((opt, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground border border-border"
+                  >
+                    {opt}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         )}
         {field.type === "radio" && (
           <div className="flex flex-col gap-1.5">
-            {(field.options.length ? field.options : ["Option"]).map((opt, i) => (
-              <label key={i} className="flex items-center gap-2 text-sm text-zinc-600">
-                <input type="radio" name={`preview_radio_${field.id}`} className="h-3.5 w-3.5" /> {opt}
+            {(options.length ? options : ["Option"]).map((opt, i) => (
+              <label key={i} className="flex items-center gap-2 text-sm text-foreground/90">
+                <input type="radio" name={`preview_radio_${field.id}`} className="h-3.5 w-3.5 accent-primary" /> {opt}
               </label>
             ))}
           </div>
         )}
         {field.type === "multiselect" && (
           <div className="flex flex-col gap-1.5">
-            {(field.options.length ? field.options : ["Option"]).map((opt, i) => (
-              <label key={i} className="flex items-center gap-2 text-sm text-zinc-600">
-                <input type="checkbox" className="h-3.5 w-3.5" /> {opt}
+            {(options.length ? options : ["Option"]).map((opt, i) => (
+              <label key={i} className="flex items-center gap-2 text-sm text-foreground/90">
+                <input type="checkbox" className="h-3.5 w-3.5 accent-primary" /> {opt}
               </label>
             ))}
           </div>
@@ -241,6 +305,9 @@ function FieldPreview({ field }: { field: TemplateField }) {
 // ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
+
+const DRAFT_KEY_NEW = "dynamic_record_new_template_draft";
+const getDraftKey = (id?: string) => (id ? `dynamic_record_template_draft_${id}` : DRAFT_KEY_NEW);
 
 export default function TemplateBuilderPage({ templateId }: { templateId?: string }) {
   const router = useRouter();
@@ -285,29 +352,114 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
+  const isHydratedRef = useRef(false);
 
-  const selectedTypeConfig = FIELD_TYPES.find((t) => t.value === draft.type)!;
+  const selectedTypeConfig = FIELD_TYPES.find((t) => t.value === draft.type) || FIELD_TYPES[0];
 
   useEffect(() => {
     if (templateId) {
       setIsFetching(true);
-      templatesApi.getTemplateById(templateId).then((data) => {
+      templatesApi.getTemplateById(templateId).then((data: any) => {
         if (data) {
-          setTemplateName(data.name || "Untitled template");
-          setStatus(data.status as TemplateStatus || "active");
-          setImage(data.image || null);
-          setImageHeight(data.imageHeight || 220);
-          setAllowCameraUploads(data.cameraAccess || false);
-          setAccessUsers(data.access || []);
-          setFields(data.fields || []);
+          // Check draft in localStorage for any unsaved labels/changes
+          let draftData: any = null;
+          try {
+            const rawDraft = localStorage.getItem(getDraftKey(templateId));
+            if (rawDraft) draftData = JSON.parse(rawDraft);
+          } catch (e) {
+            console.error("Failed to parse template draft", e);
+          }
+
+          const rawFields = draftData?.fields || data.fields || [];
+          const normalizedFields: TemplateField[] = rawFields.map((f: any) => ({
+            id: f.id || f._id?.toString() || uid(),
+            label: f.label || "",
+            type: (f.type as TemplateFieldType) || "text",
+            required: Boolean(f.required),
+            options: Array.isArray(f.options) ? f.options : [],
+          }));
+
+          setTemplateName(draftData?.name ?? data.name ?? "Untitled template");
+          setStatus((draftData?.status as TemplateStatus) ?? (data.status as TemplateStatus) ?? "active");
+          setImage(draftData?.image ?? data.image ?? null);
+          setImageHeight(draftData?.imageHeight ?? data.imageHeight ?? 220);
+          setAllowCameraUploads(draftData?.cameraAccess ?? data.cameraAccess ?? false);
+          setAccessUsers(
+            draftData?.access ??
+              (data.access || []).map((u: any) => ({
+                id: u.id || u._id?.toString() || uid(),
+                name: u.name || "",
+                email: u.email || "",
+              }))
+          );
+          setFields(normalizedFields);
         }
       }).catch(err => {
          console.error("Failed to load template", err);
       }).finally(() => {
          setIsFetching(false);
+         isHydratedRef.current = true;
       });
+    } else {
+      // New template mode: restore draft from localStorage if user added labels before refresh
+      try {
+        const rawDraft = localStorage.getItem(DRAFT_KEY_NEW);
+        if (rawDraft) {
+          const draftData = JSON.parse(rawDraft);
+          if (draftData) {
+            if (draftData.name !== undefined) setTemplateName(draftData.name);
+            if (draftData.status) setStatus(draftData.status);
+            if (draftData.image !== undefined) setImage(draftData.image);
+            if (draftData.imageHeight) setImageHeight(draftData.imageHeight);
+            if (draftData.cameraAccess !== undefined) setAllowCameraUploads(draftData.cameraAccess);
+            if (draftData.access) {
+              setAccessUsers(
+                draftData.access.map((u: any) => ({
+                  id: u.id || u._id?.toString() || uid(),
+                  name: u.name || "",
+                  email: u.email || "",
+                }))
+              );
+            }
+            if (Array.isArray(draftData.fields)) {
+              setFields(
+                draftData.fields.map((f: any) => ({
+                  id: f.id || f._id?.toString() || uid(),
+                  label: f.label || "",
+                  type: (f.type as TemplateFieldType) || "text",
+                  required: Boolean(f.required),
+                  options: Array.isArray(f.options) ? f.options : [],
+                }))
+              );
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to restore new template draft", e);
+      }
+      isHydratedRef.current = true;
     }
   }, [templateId]);
+
+  // Persist template builder draft to localStorage so labels are never lost on refresh
+  useEffect(() => {
+    if (!isHydratedRef.current || isFetching) return;
+    try {
+      const draftKey = getDraftKey(templateId);
+      const draftPayload = {
+        name: templateName,
+        status,
+        image,
+        imageHeight,
+        cameraAccess: allowCameraUploads,
+        access: accessUsers,
+        fields,
+      };
+      localStorage.setItem(draftKey, JSON.stringify(draftPayload));
+    } catch (e) {
+      console.error("Failed to save draft to localStorage", e);
+    }
+  }, [templateId, templateName, status, image, imageHeight, allowCameraUploads, accessUsers, fields, isFetching]);
 
   function openAddField() {
     setEditingFieldId(null);
@@ -317,43 +469,117 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
 
   function openEditField(field: TemplateField) {
     setEditingFieldId(field.id);
+    const options = Array.isArray(field.options) ? field.options : [];
     setDraft({
-      label: field.label,
-      type: field.type as TemplateFieldType,
-      optionsText: field.options.join(", "),
-      required: field.required,
+      label: field.label || "",
+      type: (field.type as TemplateFieldType) || "text",
+      optionsText: options.join(", "),
+      required: Boolean(field.required),
     });
     setFieldDialogOpen(true);
   }
 
-  function saveField() {
+  async function saveField() {
     if (!draft.label.trim()) return;
     const options = draft.optionsText
       .split(",")
       .map((o) => o.trim())
       .filter(Boolean);
 
+    let updatedFields: TemplateField[];
     if (editingFieldId) {
-      setFields((prev) =>
-        prev.map((f) =>
-          f.id === editingFieldId
-            ? { ...f, label: draft.label, type: draft.type, options, required: draft.required }
-            : f
-        )
+      updatedFields = fields.map((f) =>
+        f.id === editingFieldId
+          ? { ...f, label: draft.label.trim(), type: draft.type, options, required: draft.required }
+          : f
       );
     } else {
-      setFields((prev) => [
-        ...prev,
-        { id: uid(), label: draft.label, type: draft.type, options, required: draft.required },
-      ]);
+      updatedFields = [
+        ...fields,
+        { id: uid(), label: draft.label.trim(), type: draft.type, options, required: draft.required },
+      ];
     }
+    setFields(updatedFields);
     setFieldDialogOpen(false);
+
+    // Save immediately to localStorage so refresh keeps the added label
+    try {
+      const draftKey = getDraftKey(templateId);
+      localStorage.setItem(
+        draftKey,
+        JSON.stringify({
+          name: templateName,
+          status,
+          image,
+          imageHeight,
+          cameraAccess: allowCameraUploads,
+          access: accessUsers,
+          fields: updatedFields,
+        })
+      );
+    } catch (e) {
+      console.error("Failed to save draft on field save", e);
+    }
+
+    // If editing an existing template, auto-sync to backend immediately
+    if (templateId) {
+      try {
+        await templatesApi.updateTemplate(templateId, {
+          name: templateName,
+          status,
+          image: image || "",
+          imageHeight,
+          cameraAccess: allowCameraUploads,
+          access: accessUsers,
+          fields: updatedFields,
+        });
+        queryClient.invalidateQueries({ queryKey: ["template", templateId] });
+      } catch (err) {
+        console.error("Failed to auto-sync field to template", err);
+      }
+    }
   }
 
-  function confirmDeleteField() {
+  async function confirmDeleteField() {
     if (!deleteFieldId) return;
-    setFields((prev) => prev.filter((f) => f.id !== deleteFieldId));
+    const updatedFields = fields.filter((f) => f.id !== deleteFieldId);
+    setFields(updatedFields);
     setDeleteFieldId(null);
+
+    try {
+      const draftKey = getDraftKey(templateId);
+      localStorage.setItem(
+        draftKey,
+        JSON.stringify({
+          name: templateName,
+          status,
+          image,
+          imageHeight,
+          cameraAccess: allowCameraUploads,
+          access: accessUsers,
+          fields: updatedFields,
+        })
+      );
+    } catch (e) {
+      console.error("Failed to save draft on field delete", e);
+    }
+
+    if (templateId) {
+      try {
+        await templatesApi.updateTemplate(templateId, {
+          name: templateName,
+          status,
+          image: image || "",
+          imageHeight,
+          cameraAccess: allowCameraUploads,
+          access: accessUsers,
+          fields: updatedFields,
+        });
+        queryClient.invalidateQueries({ queryKey: ["template", templateId] });
+      } catch (err) {
+        console.error("Failed to auto-sync field deletion", err);
+      }
+    }
   }
 
   function addAccessUser() {
@@ -402,6 +628,12 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
         throw new Error(res.error);
       }
       setSaveSuccess(true);
+      // Clear draft on successful save
+      try {
+        localStorage.removeItem(getDraftKey(templateId));
+      } catch (e) {
+        console.error("Failed to clear draft", e);
+      }
       queryClient.invalidateQueries({ queryKey: ["templates"] });
       if (templateId) {
         queryClient.invalidateQueries({ queryKey: ["template", templateId] });
@@ -517,7 +749,7 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {FIELD_TYPES.find((t) => t.value === field.type)?.label}
-                          {field.options.length > 0 && ` · ${field.options.join(", ")}`}
+                          {(field.options || []).length > 0 && ` · ${field.options.join(", ")}`}
                         </div>
                       </div>
                       <div className="flex shrink-0 gap-1">
@@ -679,70 +911,174 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
 
       {/* Add / edit field dialog ------------------------------------------ */}
       <Dialog open={fieldDialogOpen} onOpenChange={setFieldDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingFieldId ? "Edit label" : "Add label"}</DialogTitle>
-            <DialogDescription>
-              Choose what this label is called and what kind of input it needs.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-3">
-            <div className="grid gap-1.5">
-              <Label htmlFor="field-label">Label</Label>
+        <DialogContent className="w-[94vw] max-w-lg p-0 gap-0 overflow-hidden flex flex-col rounded-xl border border-border bg-card shadow-2xl">
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-border bg-card shrink-0">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 shadow-xs">
+                <Tag className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <DialogTitle className="text-base sm:text-lg font-bold tracking-tight text-foreground truncate">
+                  {editingFieldId ? "Edit Form Label" : "Add Form Label"}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                  Configure the label name, input type, and options for this field.
+                </DialogDescription>
+              </div>
+            </div>
+          </div>
+
+          {/* Form Body */}
+          <div className="p-5 sm:p-6 space-y-4 bg-card overflow-y-auto max-h-[calc(85vh-130px)]">
+            {/* Label input */}
+            <div className="space-y-1.5">
+              <Label htmlFor="field-label" className="text-xs sm:text-sm font-semibold text-foreground flex items-center gap-1">
+                Label Name <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="field-label"
-                placeholder="e.g. Emergency contact"
+                placeholder="e.g. Employee ID, Department, Contact Number"
                 value={draft.label}
                 onChange={(e) => setDraft((d) => ({ ...d, label: e.target.value }))}
+                className="h-10 text-sm bg-background border-border"
               />
+              <p className="text-[11px] text-muted-foreground">The title displayed above the input field on the submission form.</p>
             </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="field-type">Field type</Label>
-              <select
-                id="field-type"
-                value={draft.type}
-                onChange={(e) =>
-                  setDraft((d) => ({ ...d, type: e.target.value as TemplateFieldType }))
-                }
-                className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
-              >
-                {FIELD_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
+
+            {/* Field type dropdown */}
+            <div className="space-y-1.5">
+              <Label htmlFor="field-type" className="text-xs sm:text-sm font-semibold text-foreground flex items-center gap-1">
+                Field Type
+              </Label>
+              <div className="relative">
+                <select
+                  id="field-type"
+                  value={draft.type}
+                  onChange={(e) =>
+                    setDraft((d) => ({ ...d, type: e.target.value as TemplateFieldType }))
+                  }
+                  className="
+                    h-10 w-full appearance-none rounded-lg border border-border
+                    bg-background text-foreground pl-3.5 pr-10 text-sm font-medium shadow-2xs
+                    hover:border-foreground/30 hover:bg-muted/30
+                    focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 focus:ring-offset-background focus:border-primary
+                    cursor-pointer transition-colors
+                  "
+                >
+                  {FIELD_TYPES.map((t) => (
+                    <option
+                      key={t.value}
+                      value={t.value}
+                      className="bg-card text-card-foreground dark:bg-zinc-900 dark:text-zinc-100 py-2.5 font-medium"
+                    >
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  <ChevronDown className="h-4 w-4" />
+                </div>
+              </div>
+
+              {/* Dynamic Field Type Helper Card */}
+              {selectedTypeConfig && (
+                <div className="flex items-start gap-2.5 px-3 py-2 rounded-lg bg-muted/40 border border-border/70 text-xs text-muted-foreground">
+                  {(() => {
+                    const IconComp = selectedTypeConfig.icon;
+                    return <IconComp className="h-4 w-4 text-primary shrink-0 mt-0.5" />;
+                  })()}
+                  <span className="leading-snug">{selectedTypeConfig.description}</span>
+                </div>
+              )}
             </div>
+
+            {/* Options list for dropdown, radio, multiselect */}
             {selectedTypeConfig.needsOptions && (
-              <div className="grid gap-1.5">
-                <Label htmlFor="field-options">Options (comma separated)</Label>
-                <Textarea
-                  id="field-options"
-                  placeholder="e.g. Small, Medium, Large"
-                  value={draft.optionsText}
-                  onChange={(e) => setDraft((d) => ({ ...d, optionsText: e.target.value }))}
-                  rows={2}
-                />
+              <div className="space-y-2 p-3.5 rounded-lg border border-border bg-muted/20">
+                <div className="space-y-1">
+                  <Label htmlFor="field-options" className="text-xs sm:text-sm font-semibold text-foreground flex items-center justify-between">
+                    <span>Options List</span>
+                    <span className="text-[11px] font-normal text-muted-foreground">Comma separated</span>
+                  </Label>
+                  <Textarea
+                    id="field-options"
+                    placeholder="e.g. Option 1, Option 2, Option 3"
+                    value={draft.optionsText}
+                    onChange={(e) => setDraft((d) => ({ ...d, optionsText: e.target.value }))}
+                    rows={2}
+                    className="text-sm bg-background border-border resize-none"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Separate choices with a comma. Each choice will be presented as an option.
+                  </p>
+                </div>
+
+                {/* Live options preview badges */}
+                {draft.optionsText.trim() && (
+                  <div className="pt-2 border-t border-border/50">
+                    <p className="text-[11px] font-medium text-muted-foreground mb-1.5">Choices Preview:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {draft.optionsText
+                        .split(",")
+                        .map((o) => o.trim())
+                        .filter(Boolean)
+                        .map((opt, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-background border border-border text-foreground shadow-2xs"
+                          >
+                            {opt}
+                          </span>
+                        ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
-            <label className="flex items-center gap-2 text-sm text-zinc-600">
+
+            {/* Required field toggle card */}
+            <label
+              htmlFor="field-required-toggle"
+              className="flex items-start gap-3 p-3.5 rounded-lg border border-border bg-background/60 hover:bg-muted/40 cursor-pointer transition-colors shadow-2xs select-none"
+            >
               <input
+                id="field-required-toggle"
                 type="checkbox"
                 checked={draft.required}
                 onChange={(e) => setDraft((d) => ({ ...d, required: e.target.checked }))}
-                className="h-3.5 w-3.5"
+                className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer accent-primary"
               />
-              Required field
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-semibold text-foreground">Required Label</span>
+                <span className="text-xs text-muted-foreground">
+                  Employees must provide a value for this field before submitting the record.
+                </span>
+              </div>
             </label>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setFieldDialogOpen(false)}>
+
+          {/* Footer */}
+          <div className="px-5 sm:px-6 py-3.5 border-t border-border bg-muted/20 shrink-0 flex items-center justify-end gap-2.5">
+            <Button variant="outline" onClick={() => setFieldDialogOpen(false)} className="cursor-pointer">
               Cancel
             </Button>
-            <Button onClick={saveField} disabled={!draft.label.trim()}>
-              {editingFieldId ? "Save changes" : "Add label"}
+            <Button
+              onClick={saveField}
+              disabled={!draft.label.trim()}
+              className="cursor-pointer shadow-xs"
+            >
+              {editingFieldId ? (
+                <>
+                  <Save className="mr-1.5 h-4 w-4" /> Save changes
+                </>
+              ) : (
+                <>
+                  <Plus className="mr-1.5 h-4 w-4" /> Add label
+                </>
+              )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -778,6 +1114,11 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
             <AlertDialogAction
               className="bg-red-600 hover:bg-red-700"
               onClick={async () => {
+                try {
+                  localStorage.removeItem(getDraftKey(templateId));
+                } catch (e) {
+                  console.error("Failed to clear draft", e);
+                }
                 if (templateId) {
                   try {
                     await templatesApi.deleteTemplate(templateId);
