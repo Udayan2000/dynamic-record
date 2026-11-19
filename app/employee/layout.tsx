@@ -15,7 +15,7 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
       <Sidebar role="employee" />
       <div className="flex flex-1 flex-col overflow-hidden min-w-0 w-full relative">
         <Topbar user={session.user} title="Employee Workspace" />
-        <main className="flex-1 bg-background p-1.5 sm:p-2 pt-0 pb-20 md:pb-2 overflow-y-auto min-w-0 w-full overscroll-contain">
+        <main className="flex-1 bg-background p-2 sm:p-3 md:p-2 pt-2.5 sm:pt-3 md:pt-2 pb-20 md:pb-2 overflow-y-auto min-w-0 w-full overscroll-contain">
           {children}
         </main>
         <MobileBottomNav role="employee" />
