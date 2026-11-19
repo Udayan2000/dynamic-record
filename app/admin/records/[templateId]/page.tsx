@@ -635,11 +635,13 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
     setTimeout(() => setCopiedId(false), 2000);
   };
 
-  const getImageName = () => {
-    if (!selectedImage) return "photo_attachment.png";
+  const getImageName = (url?: string, record?: any) => {
+    const activeUrl = url || selectedImage || "";
+    const activeRecord = record || selectedImageRecord || viewRecord;
+
     try {
-      if (selectedImage.startsWith("http://") || selectedImage.startsWith("https://") || selectedImage.startsWith("/")) {
-        const cleanUrl = selectedImage.split("?")[0].split("#")[0];
+      if (activeUrl.startsWith("http://") || activeUrl.startsWith("https://") || activeUrl.startsWith("/")) {
+        const cleanUrl = activeUrl.split("?")[0].split("#")[0];
         const segments = cleanUrl.split("/");
         const last = segments[segments.length - 1];
         if (last && last.includes(".")) {
@@ -650,29 +652,118 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
       // fallback
     }
 
-    const targetRecord = selectedImageRecord || viewRecord;
-    if (targetRecord) {
-      const submitter = targetRecord.submitterName ? `${targetRecord.submitterName.replace(/\s+/g, "_")}_` : "";
-      const recordRef = targetRecord._id ? targetRecord._id.slice(-6) : "photo";
-      const ext = selectedImage.includes("image/jpeg") ? ".jpg" : selectedImage.includes("image/webp") ? ".webp" : ".png";
+    if (activeRecord) {
+      const submitter = activeRecord.submitterName ? `${activeRecord.submitterName.replace(/\s+/g, "_")}_` : "";
+      const recordRef = activeRecord._id ? activeRecord._id.slice(-6) : "photo";
+      const ext =
+        activeUrl.includes("image/jpeg") || activeUrl.toLowerCase().endsWith(".jpg") || activeUrl.toLowerCase().endsWith(".jpeg")
+          ? ".jpg"
+          : activeUrl.includes("image/webp") || activeUrl.toLowerCase().endsWith(".webp")
+          ? ".webp"
+          : ".png";
       return `${submitter}Attachment_${recordRef}${ext}`;
     }
 
     return "photo_attachment.png";
   };
 
-  const handleDownloadPhoto = (photoUrl?: string) => {
-    if (!photoUrl) return;
+  const triggerBlobDownload = (blob: Blob, filename: string) => {
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  };
+
+  const fallbackDirectDownload = (url: string, filename: string) => {
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleDownloadPhoto = async (photoUrl?: string, recordContext?: any) => {
+    if (!photoUrl) {
+      toast.error("No photo available to download");
+      return;
+    }
+
+    const targetRecord = recordContext || selectedImageRecord || viewRecord;
+    const filename = getImageName(photoUrl, targetRecord);
+    const toastId = toast.loading("Downloading photo...");
+
     try {
-      const link = document.createElement("a");
-      link.href = photoUrl;
-      link.download = getImageName();
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast.success("Photo download initiated");
-    } catch {
-      toast.error("Failed to download photo");
+      // 1. If base64 data URL, convert to Blob and download
+      if (photoUrl.startsWith("data:")) {
+        const parts = photoUrl.split(",");
+        const mimeMatch = parts[0].match(/:(.*?);/);
+        const mime = mimeMatch ? mimeMatch[1] : "image/png";
+        const byteCharacters = atob(parts[1]);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: mime });
+        triggerBlobDownload(blob, filename);
+        toast.success("Photo downloaded successfully", { id: toastId });
+        return;
+      }
+
+      // 2. Fetch cross-origin image as Blob to bypass browser cross-origin download restrictions
+      try {
+        const response = await fetch(photoUrl, { mode: "cors" });
+        if (response.ok) {
+          const blob = await response.blob();
+          triggerBlobDownload(blob, filename);
+          toast.success("Photo downloaded successfully", { id: toastId });
+          return;
+        }
+      } catch (fetchErr) {
+        console.warn("Direct blob fetch failed, falling back to canvas:", fetchErr);
+      }
+
+      // 3. Fallback: Draw into offscreen Canvas to export Blob
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.naturalWidth || img.width;
+          canvas.height = img.naturalHeight || img.height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) throw new Error("Canvas context unavailable");
+          ctx.drawImage(img, 0, 0);
+          canvas.toBlob((blob) => {
+            if (blob) {
+              triggerBlobDownload(blob, filename);
+              toast.success("Photo downloaded successfully", { id: toastId });
+            } else {
+              fallbackDirectDownload(photoUrl, filename);
+              toast.success("Photo opened in new tab", { id: toastId });
+            }
+          }, "image/png");
+        } catch (canvasErr) {
+          console.warn("Canvas blob conversion failed:", canvasErr);
+          fallbackDirectDownload(photoUrl, filename);
+          toast.success("Photo opened in new tab", { id: toastId });
+        }
+      };
+      img.onerror = () => {
+        fallbackDirectDownload(photoUrl, filename);
+        toast.success("Photo opened in new tab", { id: toastId });
+      };
+      img.src = photoUrl;
+    } catch (err) {
+      console.error("Photo download error:", err);
+      toast.error("Failed to download photo", { id: toastId });
     }
   };
 
@@ -983,6 +1074,11 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
                               <DropdownMenuItem onSelect={() => setTimeout(() => setViewRecord(record), 0)}>
                                 <Eye className="mr-2 h-4 w-4 text-muted-foreground" /> View Details
                               </DropdownMenuItem>
+                              {record.data?.["Attached Photo"] && (
+                                <DropdownMenuItem onSelect={() => handleDownloadPhoto(record.data["Attached Photo"], record)}>
+                                  <Download className="mr-2 h-4 w-4 text-muted-foreground" /> Download Photo
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem onSelect={() => setTimeout(() => setEditRecord(record), 0)}>
                                 <Edit className="mr-2 h-4 w-4 text-muted-foreground" /> Edit Record
                               </DropdownMenuItem>
@@ -1161,7 +1257,7 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
                   variant="outline"
                   size="sm"
                   className="h-8 px-2.5 text-xs font-medium bg-primary/5 hover:bg-primary hover:text-primary-foreground text-primary border-primary/20 shadow-2xs cursor-pointer gap-1.5 transition-colors"
-                  onClick={() => handleDownloadPhoto(selectedImage)}
+                  onClick={() => handleDownloadPhoto(selectedImage, selectedImageRecord)}
                   title="Download high-resolution image"
                 >
                   <Download className="h-3.5 w-3.5" />
@@ -1360,7 +1456,7 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
                               variant="outline"
                               size="sm"
                               className="flex-1 h-8 text-xs cursor-pointer shadow-xs"
-                              onClick={() => handleDownloadPhoto(viewRecord.data["Attached Photo"])}
+                              onClick={() => handleDownloadPhoto(viewRecord.data["Attached Photo"], viewRecord)}
                             >
                               <Download className="h-3.5 w-3.5 mr-1.5" /> Download
                             </Button>
