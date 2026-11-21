@@ -33,7 +33,11 @@ const getProp = (data: any, keys: string[], defaultVal: string) => {
     if (matchedKey) return String(data[matchedKey]).trim();
   }
   return defaultVal;
-}
+};
+
+const escapeDriveQueryName = (name: string) => {
+  return name.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+};
 
 export async function POST(request: Request) {
   try {
@@ -67,6 +71,27 @@ export async function POST(request: Request) {
     const oauth2Client = getOAuthClient(clientId, clientSecret);
     oauth2Client.setCredentials({ access_token: accessToken, refresh_token: refreshToken });
 
+    oauth2Client.on("tokens", (tokens) => {
+      if (tokens.access_token) {
+        cookieStore.set("google_access_token", tokens.access_token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          maxAge: 3600,
+        });
+      }
+      if (tokens.refresh_token) {
+        cookieStore.set("google_refresh_token", tokens.refresh_token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          maxAge: 30 * 24 * 60 * 60,
+        });
+      }
+    });
+
     const body = await request.json();
     const { templateName, fields, hasCameraAccess, templateId, search = "" } = body;
 
@@ -93,7 +118,7 @@ export async function POST(request: Request) {
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
     async function getOrCreateFolder(folderName: string, parentId?: string) {
-      const escapedName = folderName.replace(/'/g, "\\'");
+      const escapedName = escapeDriveQueryName(folderName);
       let query = `mimeType='application/vnd.google-apps.folder' and name='${escapedName}' and trashed=false`;
       if (parentId) query += ` and '${parentId}' in parents`;
       
@@ -107,29 +132,47 @@ export async function POST(request: Request) {
       return folder.data.id as string;
     }
 
-    async function uploadOrUpdateFile(fileName: string, mimeType: string, parentId: string, mediaBody: any) {
-      const escapedName = fileName.replace(/'/g, "\\'");
-      const query = `mimeType='${mimeType}' and name='${escapedName}' and '${parentId}' in parents and trashed=false`;
+    async function uploadOrUpdateFile(
+      fileName: string, 
+      mimeType: string, 
+      parentId: string, 
+      mediaBuffer: Buffer
+    ) {
+      const cleanMime = (mimeType || 'application/octet-stream').split(';')[0].trim();
+      const escapedName = escapeDriveQueryName(fileName);
+      const query = `name='${escapedName}' and '${parentId}' in parents and trashed=false`;
       
-      const search = await drive.files.list({ q: query, fields: 'files(id)', spaces: 'drive' });
+      const search = await drive.files.list({ 
+        q: query, 
+        fields: 'files(id, name, webViewLink)', 
+        spaces: 'drive' 
+      });
       const existingFile = search.data.files && search.data.files.length > 0 ? search.data.files[0] : null;
 
       if (existingFile?.id) {
-        // Update existing file
+        // Update existing file: pass requestBody to guarantee multipart upload protocol
         const updated = await drive.files.update({
           fileId: existingFile.id,
-          media: { mimeType, body: mediaBody },
+          requestBody: { name: fileName },
+          media: { mimeType: cleanMime, body: Readable.from(mediaBuffer) },
           fields: 'id, webViewLink'
         });
-        return updated.data;
+        return { 
+          ...updated.data, 
+          isNew: false, 
+          webViewLink: updated.data.webViewLink || existingFile.webViewLink 
+        };
       } else {
         // Create new file
         const created = await drive.files.create({
           requestBody: { name: fileName, parents: [parentId] },
-          media: { mimeType, body: mediaBody },
+          media: { mimeType: cleanMime, body: Readable.from(mediaBuffer) },
           fields: 'id, webViewLink'
         });
-        return created.data;
+        return { 
+          ...created.data, 
+          isNew: true 
+        };
       }
     }
 
@@ -199,50 +242,50 @@ export async function POST(request: Request) {
           const photoData = record.data["Attached Photo"];
           
           try {
-            let stream = new Readable();
+            let buffer: Buffer | null = null;
             let mimeType = "image/jpeg";
 
             if (photoData.startsWith("http")) {
-              // It's a Cloudinary URL (or any external URL)
-              const imgResponse = await fetch(photoData);
-              const arrayBuffer = await imgResponse.arrayBuffer();
-              const buffer = Buffer.from(arrayBuffer);
-              stream.push(buffer);
-              stream.push(null);
-              mimeType = imgResponse.headers.get("content-type") || "image/jpeg";
+              const controller = new AbortController();
+              const timeout = setTimeout(() => controller.abort(), 15000);
+              const imgResponse = await fetch(photoData, { signal: controller.signal });
+              clearTimeout(timeout);
+              if (imgResponse.ok) {
+                const arrayBuffer = await imgResponse.arrayBuffer();
+                buffer = Buffer.from(arrayBuffer);
+                mimeType = imgResponse.headers.get("content-type") || "image/jpeg";
+              }
             } else {
               // Fallback for legacy base64 records
               const matches = photoData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
               if (matches && matches.length === 3) {
-                const buffer = Buffer.from(matches[2], 'base64');
-                stream.push(buffer);
-                stream.push(null);
+                buffer = Buffer.from(matches[2], 'base64');
                 mimeType = matches[1];
-              } else {
-                stream = null as any;
               }
             }
 
-            if (stream) {
-              // Extract student name from custom fields or fallback to submitter name
+            if (buffer) {
               let studentName = getProp(record.data, ['name', 'student', 'first name', 'full name'], '');
               if (!studentName || studentName.toLowerCase() === 'unknown') {
                 studentName = record.submitterName && record.submitterName !== 'Unknown' ? record.submitterName : 'User';
               }
               
-              // Ensure student name has no spaces or weird characters if desired, but we'll leave it as is.
-              // Image name format: Class_Section_Roll_name
               const imageName = group.isDummy
                 ? `dummy_${studentName}.jpg`.replace(/\s+/g, '_')
                 : `${group.classRoman}_${group.section}_${group.roll}_${studentName}.jpg`.replace(/\s+/g, '_');
               
-              const uploadedImg = await uploadOrUpdateFile(imageName, mimeType, imageFolderId, stream);
+              const uploadedImg = await uploadOrUpdateFile(imageName, mimeType, imageFolderId, buffer);
               
-              if (uploadedImg.id) {
-                // Ensure anyone with link can view it (may fail if already shared, that's fine)
-                try {
-                  await drive.permissions.create({ fileId: uploadedImg.id, requestBody: { role: 'reader', type: 'anyone' } });
-                } catch (permErr) { /* ignore perm error if already exists */ }
+              if (uploadedImg?.id) {
+                // Only grant permission if newly created, avoids redundant failing calls on update
+                if (uploadedImg.isNew) {
+                  try {
+                    await drive.permissions.create({ 
+                      fileId: uploadedImg.id, 
+                      requestBody: { role: 'reader', type: 'anyone' } 
+                    });
+                  } catch (permErr) { /* ignore permission error */ }
+                }
                 photoLink = uploadedImg.webViewLink || uploadedImg.id;
               }
             }
@@ -260,9 +303,10 @@ export async function POST(request: Request) {
         ? `${templateName}_dummy.csv`
         : `${templateName}_${group.school}_${group.classRoman}_${group.section}_${group.roll}.csv`;
       
-      const csvFile = await uploadOrUpdateFile(csvFileName, "text/csv", rollFolderId, csvRows.join("\n"));
+      const csvBuffer = Buffer.from(csvRows.join("\n"), "utf-8");
+      const csvFile = await uploadOrUpdateFile(csvFileName, "text/csv", rollFolderId, csvBuffer);
       
-      if (csvFile.webViewLink) exportedLinks.push(csvFile.webViewLink);
+      if (csvFile?.webViewLink) exportedLinks.push(csvFile.webViewLink);
     }
 
     return NextResponse.json({ success: true, links: exportedLinks });

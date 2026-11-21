@@ -873,6 +873,9 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
       setIsExporting(true);
       toast.loading("Exporting to Google Drive...", { id: "drive-export" });
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 90000);
+
       const response = await fetch('/api/drive/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -882,8 +885,10 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
           search: debouncedSearch,
           fields: template.fields,
           hasCameraAccess: template.cameraAccess
-        })
+        }),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
 
       if (response.status === 401) {
         toast.dismiss("drive-export");
@@ -894,13 +899,17 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.details || 'Upload failed');
+        throw new Error(errData.details || errData.error || 'Upload failed');
       }
 
       toast.success("Successfully exported to Google Drive!", { id: "drive-export" });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Export error:", error);
-      toast.error("An error occurred during export", { id: "drive-export" });
+      if (error?.name === 'AbortError') {
+        toast.error("Export timed out. Please check your Drive or try again.", { id: "drive-export" });
+      } else {
+        toast.error(error?.message || "An error occurred during export", { id: "drive-export" });
+      }
     } finally {
       setIsExporting(false);
     }
