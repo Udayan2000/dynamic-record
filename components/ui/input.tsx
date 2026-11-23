@@ -91,7 +91,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <input
           type={type}
           className={cn(
-            "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 transition-colors",
+            "flex h-10 w-full rounded-md border-[0.5px] border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-[0.5px] focus-visible:ring-ring focus-visible:border-[0.5px] disabled:cursor-not-allowed disabled:opacity-50 transition-colors",
             isSearch && "pl-9", // Make room for left icon
             isSearch && "pr-10", // Make room for right icons (clear / loading)
             className

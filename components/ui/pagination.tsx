@@ -114,11 +114,11 @@ export function PerPageSelect({
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
           className="
-            h-9 sm:h-9 appearance-none rounded-lg border border-border
+            h-9 sm:h-9 appearance-none rounded-lg border-[0.5px] border-border
             bg-background pl-2.5 sm:pl-3 pr-7 sm:pr-8 py-1
             text-xs sm:text-sm font-medium text-foreground shadow-2xs
             hover:border-foreground/30 hover:bg-muted/50
-            focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 focus:ring-offset-background focus:border-primary
+            focus:outline-none focus:ring-[0.5px] focus:ring-ring focus-visible:outline-none focus-visible:ring-[0.5px] focus-visible:ring-ring focus-visible:border-[0.5px] focus:border-primary
             cursor-pointer transition-colors touch-manipulation
           "
         >

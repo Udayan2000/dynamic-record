@@ -255,7 +255,7 @@ function FieldPreview({ field }: { field: TemplateField }) {
         {field.type === "dropdown" && (
           <div className="flex flex-col gap-1.5">
             <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
+              className="h-9 w-full rounded-md border-[0.5px] border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-[0.5px] focus:ring-ring focus-visible:outline-none focus-visible:ring-[0.5px] focus-visible:ring-ring focus-visible:border-[0.5px] cursor-pointer"
               defaultValue=""
             >
               <option value="">Select an option</option>
@@ -961,10 +961,10 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
                     setDraft((d) => ({ ...d, type: e.target.value as TemplateFieldType }))
                   }
                   className="
-                    h-10 w-full appearance-none rounded-lg border border-border
+                    h-10 w-full appearance-none rounded-lg border-[0.5px] border-border
                     bg-background text-foreground pl-3.5 pr-10 text-sm font-medium shadow-2xs
                     hover:border-foreground/30 hover:bg-muted/30
-                    focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 focus:ring-offset-background focus:border-primary
+                    focus:outline-none focus:ring-[0.5px] focus:ring-ring focus-visible:outline-none focus-visible:ring-[0.5px] focus-visible:ring-ring focus-visible:border-[0.5px] focus:border-primary
                     cursor-pointer transition-colors
                   "
                 >

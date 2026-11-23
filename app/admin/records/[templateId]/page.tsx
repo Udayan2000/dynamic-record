@@ -507,7 +507,7 @@ function EditRecordForm({ template, record, onSave, onCancel, isPending }: any) 
                           value={formData[fieldId] || ""}
                           onChange={(e) => handleInputChange(fieldId, e.target.value)}
                           className={cn(
-                            "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer",
+                            "flex h-10 w-full items-center justify-between rounded-md border-[0.5px] border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-[0.5px] focus:ring-ring focus-visible:outline-none focus-visible:ring-[0.5px] focus-visible:ring-ring focus-visible:border-[0.5px] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer",
                             errors[fieldId] ? "border-red-500" : ""
                           )}
                         >

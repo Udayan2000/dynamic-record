@@ -120,7 +120,7 @@ export default function TemplateView({ templateId }: { templateId: string }) {
                                         {field.type === "text" && <Input placeholder="Text input" />}
                                         {field.type === "textarea" && <Textarea placeholder="Long text input" rows={3} />}
                                         {field.type === "dropdown" && (
-                                            <select className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs focus:ring-1 focus:ring-ring focus:outline-none">
+                                            <select className="h-10 w-full rounded-md border-[0.5px] border-input bg-background px-3 text-sm text-foreground shadow-xs focus:ring-[0.5px] focus:ring-ring focus:outline-none focus-visible:outline-none focus-visible:ring-[0.5px] focus-visible:ring-ring focus-visible:border-[0.5px] cursor-pointer">
                                                 <option>{field.options[0] || "Select an option"}</option>
                                             </select>
                                         )}
