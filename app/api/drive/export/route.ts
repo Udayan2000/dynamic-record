@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { getOAuthClient } from "@/lib/google";
+import { getOAuthClient, getRedirectUri } from "@/lib/google";
 import { google } from "googleapis";
 import { Readable } from "stream";
 import { getSession } from "@/lib/auth";
@@ -42,12 +42,9 @@ const escapeDriveQueryName = (name: string) => {
 export async function POST(request: Request) {
   try {
     const cookieStore = await cookies();
-    const accessToken = cookieStore.get("google_access_token")?.value;
-    const refreshToken = cookieStore.get("google_refresh_token")?.value;
-
-    if (!accessToken && !refreshToken) {
-      return NextResponse.json({ error: "Unauthorized Google Drive" }, { status: 401 });
-    }
+    let accessToken = cookieStore.get("google_access_token")?.value;
+    let refreshToken = cookieStore.get("google_refresh_token")?.value;
+    let connectedEmail = cookieStore.get("google_connected_email")?.value;
 
     const session = await getSession();
     if (!session) {
@@ -65,32 +62,67 @@ export async function POST(request: Request) {
     const clientSecret = profile.googleDriveCredentials?.clientSecret;
 
     if (!clientId || !clientSecret) {
-      return NextResponse.json({ error: "Google Drive Credentials missing" }, { status: 400 });
+      return NextResponse.json({ error: "Google Drive Client ID or Secret missing in Settings" }, { status: 400 });
     }
 
-    const oauth2Client = getOAuthClient(clientId, clientSecret);
+    // Fallback to backend profile credentials if cookie is absent
+    if (!refreshToken && profile.googleDriveCredentials?.refreshToken) {
+      refreshToken = profile.googleDriveCredentials.refreshToken;
+    }
+    if (!connectedEmail && profile.googleDriveCredentials?.connectedEmail) {
+      connectedEmail = profile.googleDriveCredentials.connectedEmail;
+    }
+
+    if (!accessToken && !refreshToken) {
+      return NextResponse.json({ error: "Unauthorized Google Drive", needsAuth: true }, { status: 401 });
+    }
+
+    const redirectUri = getRedirectUri(request);
+    const oauth2Client = getOAuthClient(clientId, clientSecret, redirectUri);
     oauth2Client.setCredentials({ access_token: accessToken, refresh_token: refreshToken });
 
-    oauth2Client.on("tokens", (tokens) => {
-      if (tokens.access_token) {
-        cookieStore.set("google_access_token", tokens.access_token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          path: "/",
-          maxAge: 3600,
-        });
+    // Explicitly refresh if access token is missing or if refresh token exists
+    if (!accessToken && refreshToken) {
+      try {
+        const { credentials } = await oauth2Client.refreshAccessToken();
+        oauth2Client.setCredentials(credentials);
+        accessToken = credentials.access_token || "";
+        if (credentials.access_token) {
+          cookieStore.set("google_access_token", credentials.access_token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            path: "/",
+            maxAge: 3600,
+          });
+        }
+      } catch (refreshErr) {
+        console.error("Token refresh failed:", refreshErr);
+        cookieStore.delete("google_access_token");
+        cookieStore.delete("google_refresh_token");
+        return NextResponse.json({ error: "Google Drive session expired. Please re-authenticate.", needsAuth: true }, { status: 401 });
       }
-      if (tokens.refresh_token) {
-        cookieStore.set("google_refresh_token", tokens.refresh_token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          path: "/",
-          maxAge: 30 * 24 * 60 * 60,
-        });
+    }
+
+    // Detect connected account email if not cached
+    if (!connectedEmail) {
+      try {
+        const oauth2 = google.oauth2({ version: "v2", auth: oauth2Client });
+        const userInfo = await oauth2.userinfo.get();
+        connectedEmail = userInfo.data.email || "";
+        if (connectedEmail) {
+          cookieStore.set("google_connected_email", connectedEmail, {
+            httpOnly: false,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            path: "/",
+            maxAge: 30 * 24 * 60 * 60,
+          });
+        }
+      } catch (e) {
+        // ignore
       }
-    });
+    }
 
     const body = await request.json();
     const { templateName, fields, hasCameraAccess, templateId, search = "" } = body;
@@ -118,14 +150,15 @@ export async function POST(request: Request) {
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
     async function getOrCreateFolder(folderName: string, parentId?: string) {
-      const escapedName = escapeDriveQueryName(folderName);
+      const cleanName = folderName.trim() || "Folder";
+      const escapedName = escapeDriveQueryName(cleanName);
       let query = `mimeType='application/vnd.google-apps.folder' and name='${escapedName}' and trashed=false`;
       if (parentId) query += ` and '${parentId}' in parents`;
       
-      const search = await drive.files.list({ q: query, fields: 'files(id, name)', spaces: 'drive' });
-      if (search.data.files && search.data.files.length > 0) return search.data.files[0].id as string;
+      const searchRes = await drive.files.list({ q: query, fields: 'files(id, name)', spaces: 'drive' });
+      if (searchRes.data.files && searchRes.data.files.length > 0) return searchRes.data.files[0].id as string;
 
-      const fileMetadata: any = { name: folderName, mimeType: 'application/vnd.google-apps.folder' };
+      const fileMetadata: any = { name: cleanName, mimeType: 'application/vnd.google-apps.folder' };
       if (parentId) fileMetadata.parents = [parentId];
       
       const folder = await drive.files.create({ requestBody: fileMetadata, fields: 'id' });
@@ -150,7 +183,6 @@ export async function POST(request: Request) {
       const existingFile = search.data.files && search.data.files.length > 0 ? search.data.files[0] : null;
 
       if (existingFile?.id) {
-        // Update existing file: pass requestBody to guarantee multipart upload protocol
         const updated = await drive.files.update({
           fileId: existingFile.id,
           requestBody: { name: fileName },
@@ -163,7 +195,6 @@ export async function POST(request: Request) {
           webViewLink: updated.data.webViewLink || existingFile.webViewLink 
         };
       } else {
-        // Create new file
         const created = await drive.files.create({
           requestBody: { name: fileName, parents: [parentId] },
           media: { mimeType: cleanMime, body: Readable.from(mediaBuffer) },
@@ -182,7 +213,7 @@ export async function POST(request: Request) {
     const rootFolderId = await getOrCreateFolder(rootName);
 
     // Group Records
-    const groups = new Map<string, { school: string, classRoman: string, section: string, roll: string, isDummy: boolean, records: any[] }>();
+    const groups = new Map<string, { school: string, classRoman: string, section: string, roll: string, isStandardStructure: boolean, records: any[] }>();
     
     for (const record of records) {
       const school = getProp(record.data, ['school', 'institution', 'college', 'clg', 'institute'], '');
@@ -190,12 +221,12 @@ export async function POST(request: Request) {
       const section = getProp(record.data, ['section', 'batch', 'group'], '');
       const roll = getProp(record.data, ['roll', 'roll no', 'roll number'], '');
       
-      const isDummy = !school || !cls || !section || !roll;
-      const classRoman = isDummy ? '' : toRoman(cls);
+      const isStandardStructure = Boolean(school && cls && section && roll);
+      const classRoman = isStandardStructure ? toRoman(cls) : '';
       
-      const groupKey = isDummy ? 'dummy_group' : `${school}_${classRoman}_${section}_${roll}`;
+      const groupKey = isStandardStructure ? `${school}_${classRoman}_${section}_${roll}` : 'default_group';
       if (!groups.has(groupKey)) {
-        groups.set(groupKey, { school, classRoman, section, roll, isDummy, records: [] });
+        groups.set(groupKey, { school, classRoman, section, roll, isStandardStructure, records: [] });
       }
       groups.get(groupKey)!.records.push(record);
     }
@@ -204,20 +235,21 @@ export async function POST(request: Request) {
 
     // Process each group
     for (const [_, group] of Array.from(groups.entries())) {
-      let rollFolderId: string;
+      let targetFolderId: string;
       
-      if (group.isDummy) {
-        rollFolderId = await getOrCreateFolder("dummy", rootFolderId);
+      if (!group.isStandardStructure) {
+        // Direct root folder export for templates without academic hierarchy
+        targetFolderId = rootFolderId;
       } else {
         const highSchoolFolderId = await getOrCreateFolder(group.school, rootFolderId);
         const classFolderId = await getOrCreateFolder(group.classRoman, highSchoolFolderId);
         const sectionFolderId = await getOrCreateFolder(group.section, classFolderId);
-        rollFolderId = await getOrCreateFolder(group.roll, sectionFolderId);
+        targetFolderId = await getOrCreateFolder(group.roll, sectionFolderId);
       }
       
       let imageFolderId: string | null = null;
       if (hasCameraAccess) {
-        imageFolderId = await getOrCreateFolder("image", rollFolderId);
+        imageFolderId = await getOrCreateFolder("images", targetFolderId);
       }
 
       const headers = ["Submitted By", "Email", "Date Submitted", ...fields.map((f: any) => f.label)];
@@ -265,19 +297,19 @@ export async function POST(request: Request) {
             }
 
             if (buffer) {
-              let studentName = getProp(record.data, ['name', 'student', 'first name', 'full name'], '');
-              if (!studentName || studentName.toLowerCase() === 'unknown') {
-                studentName = record.submitterName && record.submitterName !== 'Unknown' ? record.submitterName : 'User';
+              let personName = getProp(record.data, ['name', 'student', 'first name', 'full name', 'employee'], '');
+              if (!personName || personName.toLowerCase() === 'unknown') {
+                personName = record.submitterName && record.submitterName !== 'Unknown' ? record.submitterName : 'User';
               }
+              const recordRef = record._id ? String(record._id).slice(-6) : Math.random().toString(36).slice(2, 6);
               
-              const imageName = group.isDummy
-                ? `dummy_${studentName}.jpg`.replace(/\s+/g, '_')
-                : `${group.classRoman}_${group.section}_${group.roll}_${studentName}.jpg`.replace(/\s+/g, '_');
+              const imageName = !group.isStandardStructure
+                ? `${personName}_Attachment_${recordRef}.jpg`.replace(/\s+/g, '_')
+                : `${group.classRoman}_${group.section}_${group.roll}_${personName}.jpg`.replace(/\s+/g, '_');
               
               const uploadedImg = await uploadOrUpdateFile(imageName, mimeType, imageFolderId, buffer);
               
               if (uploadedImg?.id) {
-                // Only grant permission if newly created, avoids redundant failing calls on update
                 if (uploadedImg.isNew) {
                   try {
                     await drive.permissions.create({ 
@@ -299,23 +331,36 @@ export async function POST(request: Request) {
         csvRows.push(rowData.join(","));
       }
 
-      const csvFileName = group.isDummy 
-        ? `${templateName}_dummy.csv`
+      const csvFileName = !group.isStandardStructure 
+        ? `${templateName}_Records.csv`
         : `${templateName}_${group.school}_${group.classRoman}_${group.section}_${group.roll}.csv`;
       
       const csvBuffer = Buffer.from(csvRows.join("\n"), "utf-8");
-      const csvFile = await uploadOrUpdateFile(csvFileName, "text/csv", rollFolderId, csvBuffer);
+      const csvFile = await uploadOrUpdateFile(csvFileName, "text/csv", targetFolderId, csvBuffer);
       
       if (csvFile?.webViewLink) exportedLinks.push(csvFile.webViewLink);
     }
 
-    return NextResponse.json({ success: true, links: exportedLinks });
+    return NextResponse.json({ 
+      success: true, 
+      accountEmail: connectedEmail,
+      folderName: rootName,
+      folderLink: `https://drive.google.com/drive/folders/${rootFolderId}`,
+      links: exportedLinks 
+    });
 
   } catch (error) {
     console.error("Drive error:", error);
-    if ((error as any)?.message?.includes('No access') || (error as any)?.code === 401) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const errMsg = String((error as any)?.message || "");
+    if (
+      errMsg.includes('No access') || 
+      errMsg.includes('invalid_grant') || 
+      errMsg.includes('Invalid Credentials') || 
+      (error as any)?.code === 401 || 
+      (error as any)?.status === 401
+    ) {
+      return NextResponse.json({ error: "Unauthorized", needsAuth: true }, { status: 401 });
     }
-    return NextResponse.json({ error: "Failed to upload file", details: String(error) }, { status: 500 });
+    return NextResponse.json({ error: "Failed to upload file to Google Drive", details: String(error) }, { status: 500 });
   }
 }

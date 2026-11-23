@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
-import { getOAuthClient } from "@/lib/google";
+import { getOAuthClient, getRedirectUri } from "@/lib/google";
 import { getSession } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const urlObj = new URL(request.url);
+  const returnUrl = urlObj.searchParams.get("returnUrl") || "/admin/records";
 
   // Fetch admin credentials
   const API_BASE = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001/api";
@@ -25,15 +28,22 @@ export async function GET() {
   const clientSecret = profile.googleDriveCredentials?.clientSecret;
 
   if (!clientId || !clientSecret) {
-    return NextResponse.redirect(new URL("/admin/settings", process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"));
+    return NextResponse.redirect(new URL("/admin/settings", request.url));
   }
 
-  const oauth2Client = getOAuthClient(clientId, clientSecret);
-  const url = oauth2Client.generateAuthUrl({
+  const redirectUri = getRedirectUri(request);
+  const oauth2Client = getOAuthClient(clientId, clientSecret, redirectUri);
+
+  const authUrl = oauth2Client.generateAuthUrl({
     access_type: "offline",
-    prompt: "consent",
-    scope: ["https://www.googleapis.com/auth/drive.file"],
+    prompt: "select_account consent", // Forces Google to show account chooser so user can pick the exact email ID
+    scope: [
+      "https://www.googleapis.com/auth/drive.file",
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile"
+    ],
+    state: encodeURIComponent(returnUrl),
   });
 
-  return NextResponse.redirect(url);
+  return NextResponse.redirect(authUrl);
 }

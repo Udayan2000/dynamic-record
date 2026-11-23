@@ -43,6 +43,7 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
+  ChevronDown,
 } from "lucide-react";
 import React from "react";
 import { toast } from "sonner";
@@ -597,6 +598,7 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
   const [imageZoom, setImageZoom] = useState(1);
   const [imageRotation, setImageRotation] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
+  const hasAutoExported = useRef(false);
 
   // Modal States
   const [viewRecord, setViewRecord] = useState<any>(null);
@@ -866,8 +868,14 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
     }
   };
 
+  const handleSwitchDriveAccount = () => {
+    if (!templateId) return;
+    const returnPath = `/admin/records/${templateId}`;
+    window.location.href = `/api/auth/google?returnUrl=${encodeURIComponent(returnPath)}`;
+  };
+
   const handleExportDrive = async () => {
-    if (!template) return;
+    if (!template || !templateId) return;
 
     try {
       setIsExporting(true);
@@ -892,8 +900,9 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
 
       if (response.status === 401) {
         toast.dismiss("drive-export");
-        toast.info("Redirecting to Google for authentication...");
-        window.location.href = '/api/auth/google';
+        toast.info("Connecting to Google Drive...");
+        const returnPath = `/admin/records/${templateId}?export=true`;
+        window.location.href = `/api/auth/google?returnUrl=${encodeURIComponent(returnPath)}`;
         return;
       }
 
@@ -902,7 +911,26 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
         throw new Error(errData.details || errData.error || 'Upload failed');
       }
 
-      toast.success("Successfully exported to Google Drive!", { id: "drive-export" });
+      const result = await response.json().catch(() => ({}));
+      const accountEmail = result.accountEmail;
+      const folderName = result.folderName || template.name;
+      const folderLink = result.folderLink;
+
+      toast.success(
+        accountEmail
+          ? `Successfully exported to Google Drive (${accountEmail}) in folder "${folderName}"`
+          : `Successfully exported to Google Drive in folder "${folderName}"`,
+        {
+          id: "drive-export",
+          duration: 8000,
+          action: folderLink
+            ? {
+                label: "Open Folder",
+                onClick: () => window.open(folderLink, "_blank", "noopener,noreferrer"),
+              }
+            : undefined,
+        }
+      );
     } catch (error: any) {
       console.error("Export error:", error);
       if (error?.name === 'AbortError') {
@@ -914,6 +942,17 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
       setIsExporting(false);
     }
   };
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !template || !templateId) return;
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("export") === "true" && !hasAutoExported.current) {
+      hasAutoExported.current = true;
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+      handleExportDrive();
+    }
+  }, [template, templateId]);
 
   if (!templateId || isLoading) {
     return (
@@ -973,15 +1012,37 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
             </div>
             {user?.role === "admin" && (
               <div className="grid grid-cols-2 gap-2 w-full sm:flex sm:w-auto sm:items-center sm:justify-end">
-                <Button
-                  onClick={handleExportDrive}
-                  disabled={isExporting}
-                  variant="default"
-                  className="w-full sm:w-auto h-10 sm:h-9 shrink-0 text-white shadow-xs justify-center font-medium active:scale-[0.98] transition-all touch-manipulation"
-                >
-                  {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CloudDownload className="mr-2 h-4 w-4" />}
-                  <span>Drive Export</span>
-                </Button>
+                <div className="inline-flex rounded-md shadow-xs w-full sm:w-auto">
+                  <Button
+                    onClick={handleExportDrive}
+                    disabled={isExporting}
+                    variant="default"
+                    className="w-full sm:w-auto h-10 sm:h-9 text-white justify-center font-medium active:scale-[0.98] transition-all touch-manipulation rounded-r-none"
+                  >
+                    {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CloudDownload className="mr-2 h-4 w-4" />}
+                    <span>Drive Export</span>
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="default"
+                        disabled={isExporting}
+                        className="h-10 sm:h-9 px-2 text-white border-l border-white/20 rounded-l-none cursor-pointer"
+                        title="Google Drive Options"
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={handleExportDrive} className="cursor-pointer">
+                        <CloudDownload className="mr-2 h-4 w-4 text-muted-foreground" /> Export to Google Drive
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleSwitchDriveAccount} className="cursor-pointer">
+                        <RotateCw className="mr-2 h-4 w-4 text-muted-foreground" /> Switch Google Account
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
                 <Button
                   onClick={handleExportCSV}
                   variant="outline"
