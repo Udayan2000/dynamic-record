@@ -1,9 +1,12 @@
 import { cookies } from "next/headers";
 import { NextResponse, NextRequest } from "next/server";
+import { getBackendBaseUrl } from "@/lib/api-config";
 
 export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
   const token = cookieStore.get("access_token")?.value;
+  const incomingAuth = req.headers.get("authorization");
+  const authToken = incomingAuth || (token ? `Bearer ${token}` : "");
 
   const searchParams = req.nextUrl.searchParams;
   const search = searchParams.get("search") || "";
@@ -16,15 +19,22 @@ export async function GET(req: NextRequest) {
   query.append("limit", limit);
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/templates?${query.toString()}`, {
+    const backendUrl = getBackendBaseUrl();
+    const response = await fetch(`${backendUrl}/templates?${query.toString()}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": token ? `Bearer ${token}` : "",
+        "Authorization": authToken,
       },
     });
 
-    const data = await response.json();
+    const text = await response.text();
+    let data: any;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { message: text || "Failed to fetch templates" };
+    }
     return NextResponse.json(data, { status: response.status });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "An error occurred";
@@ -35,20 +45,29 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies();
   const token = cookieStore.get("access_token")?.value;
+  const incomingAuth = req.headers.get("authorization");
+  const authToken = incomingAuth || (token ? `Bearer ${token}` : "");
 
   try {
     const body = await req.json();
+    const backendUrl = getBackendBaseUrl();
     
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/templates`, {
+    const response = await fetch(`${backendUrl}/templates`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": token ? `Bearer ${token}` : "",
+        "Authorization": authToken,
       },
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
+    const text = await response.text();
+    let data: any;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { message: text || "Failed to create template" };
+    }
     return NextResponse.json(data, { status: response.status });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "An error occurred";

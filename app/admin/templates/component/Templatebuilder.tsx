@@ -641,8 +641,10 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
       router.refresh();
       // brief pause so the success state is visible before navigating away
       setTimeout(() => router.push('/admin/templates'), 500);
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Something went wrong while saving.");
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.response?.data?.error || (err instanceof Error ? err.message : "Something went wrong while saving.");
+      setSaveError(msg);
+      toast.error(msg);
     } finally {
       setIsSaving(false);
     }
