@@ -117,7 +117,7 @@ function UserImageCapture({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.drawImage(video, 0, 0);
-    onImageChange(canvas.toDataURL("image/png"));
+    onImageChange(canvas.toDataURL("image/jpeg", 0.82));
     stopCamera();
   }
 
@@ -125,7 +125,32 @@ function UserImageCapture({
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => onImageChange(reader.result as string);
+    reader.onload = (event) => {
+      const rawData = event.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const maxWidth = 1600;
+        const maxHeight = 1600;
+        let { width, height } = img;
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          onImageChange(canvas.toDataURL("image/jpeg", 0.82));
+        } else {
+          onImageChange(rawData);
+        }
+      };
+      img.onerror = () => onImageChange(rawData);
+      img.src = rawData;
+    };
     reader.readAsDataURL(file);
     e.target.value = "";
   }
@@ -142,7 +167,7 @@ function UserImageCapture({
       ctx.translate(canvas.width / 2, canvas.height / 2);
       ctx.rotate(Math.PI / 2);
       ctx.drawImage(img, -img.width / 2, -img.height / 2);
-      onImageChange(canvas.toDataURL("image/png"));
+      onImageChange(canvas.toDataURL("image/jpeg", 0.82));
     };
     img.src = image;
   }

@@ -78,7 +78,8 @@ function UserImageCapture({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.drawImage(video, 0, 0);
-    onImageChange(canvas.toDataURL("image/png"));
+    // Compress to JPEG with 0.82 quality for 95% bandwidth and storage reduction
+    onImageChange(canvas.toDataURL("image/jpeg", 0.82));
     stopCamera();
   }
 
@@ -86,7 +87,32 @@ function UserImageCapture({
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => onImageChange(reader.result as string);
+    reader.onload = (event) => {
+      const rawData = event.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const maxWidth = 1600;
+        const maxHeight = 1600;
+        let { width, height } = img;
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          onImageChange(canvas.toDataURL("image/jpeg", 0.82));
+        } else {
+          onImageChange(rawData);
+        }
+      };
+      img.onerror = () => onImageChange(rawData);
+      img.src = rawData;
+    };
     reader.readAsDataURL(file);
     e.target.value = "";
   }
@@ -103,7 +129,7 @@ function UserImageCapture({
       ctx.translate(canvas.width / 2, canvas.height / 2);
       ctx.rotate(Math.PI / 2);
       ctx.drawImage(img, -img.width / 2, -img.height / 2);
-      onImageChange(canvas.toDataURL("image/png"));
+      onImageChange(canvas.toDataURL("image/jpeg", 0.82));
     };
     img.src = image;
   }
@@ -191,11 +217,8 @@ export default function TemplateUploadPage({ params }: { params: Promise<{ id: s
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const mutation = useMutation({
-    mutationFn: (data: any) => {
-      if (data instanceof FormData) {
-        return recordsApi.createRecord(data);
-      }
-      return recordsApi.createRecord({ templateId: templateId as string, data });
+    mutationFn: (data: { templateId: string; data: any }) => {
+      return recordsApi.createRecord(data);
     },
     onSuccess: () => {
       toast.success("Record submitted successfully");
@@ -203,7 +226,8 @@ export default function TemplateUploadPage({ params }: { params: Promise<{ id: s
       router.push("/admin/records");
     },
     onError: (err: any) => {
-      toast.error(err.message || "Failed to submit record");
+      const message = err.response?.data?.message || err.message || "Failed to submit record";
+      toast.error(message);
     },
   });
 
@@ -238,9 +262,9 @@ export default function TemplateUploadPage({ params }: { params: Promise<{ id: s
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!template) return;
+    if (!template || !templateId) return;
 
-    // Validate
+    // Validate required fields
     const newErrors: Record<string, string> = {};
     template.fields.forEach((field: any) => {
       const fieldId = field._id || field.id;
@@ -258,39 +282,18 @@ export default function TemplateUploadPage({ params }: { params: Promise<{ id: s
       return;
     }
 
-    // Convert field IDs to Labels for easier reading in records
-    // Alternatively, just save the formData as is, and the UI maps it. 
-    // Usually mapping by label is easier to read in DB.
+    // Convert field IDs to Labels for consistency in DB records
     const submissionData: Record<string, any> = {};
     template.fields.forEach((field: any) => {
       const fieldId = field._id || field.id;
       submissionData[field.label] = formData[fieldId] || (field.type === 'multiselect' ? [] : "");
     });
 
-    let payload: any = submissionData;
-
     if (template.cameraAccess && formData.userImage) {
-      const formPayload = new FormData();
-      formPayload.append("templateId", templateId as string);
-      formPayload.append("data", JSON.stringify(submissionData));
-      
-      const dataUrl = formData.userImage;
-      const arr = dataUrl.split(',');
-      const mimeMatch = arr[0].match(/:(.*?);/);
-      const mime = mimeMatch ? mimeMatch[1] : 'image/png';
-      const bstr = atob(arr[1]);
-      let n = bstr.length;
-      const u8arr = new Uint8Array(n);
-      while(n--){
-          u8arr[n] = bstr.charCodeAt(n);
-      }
-      const file = new File([u8arr], "capture.png", { type: mime });
-      
-      formPayload.append("image", file);
-      payload = formPayload;
+      submissionData["Attached Photo"] = formData.userImage;
     }
 
-    mutation.mutate(payload);
+    mutation.mutate({ templateId, data: submissionData });
   };
 
   if (!templateId || isLoading) {

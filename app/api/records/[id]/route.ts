@@ -8,6 +8,8 @@ export async function PUT(
   const { id } = await params;
   const cookieStore = await cookies();
   const token = cookieStore.get("access_token")?.value;
+  const incomingAuth = req.headers.get("authorization");
+  const authToken = incomingAuth || (token ? `Bearer ${token}` : "");
   const body = await req.json();
 
   try {
@@ -15,7 +17,7 @@ export async function PUT(
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": token ? `Bearer ${token}` : "",
+        "Authorization": authToken,
       },
       body: JSON.stringify(body),
     });
@@ -35,13 +37,15 @@ export async function DELETE(
   const { id } = await params;
   const cookieStore = await cookies();
   const token = cookieStore.get("access_token")?.value;
+  const incomingAuth = req.headers.get("authorization");
+  const authToken = incomingAuth || (token ? `Bearer ${token}` : "");
 
   try {
     const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/records/${id}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": token ? `Bearer ${token}` : "",
+        "Authorization": authToken,
       },
     });
 

@@ -4,20 +4,39 @@ import { NextResponse, NextRequest } from "next/server";
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies();
   const token = cookieStore.get("access_token")?.value;
+  const incomingAuth = req.headers.get("authorization");
+  const authToken = incomingAuth || (token ? `Bearer ${token}` : "");
   const contentType = req.headers.get("content-type") || "";
 
   try {
-    let bodyPayload: any;
+    let bodyPayload: string;
     let headers: Record<string, string> = {
-      "Authorization": token ? `Bearer ${token}` : "",
+      "Content-Type": "application/json",
+      "Authorization": authToken,
     };
 
     if (contentType.includes("multipart/form-data")) {
-      bodyPayload = await req.formData();
-      // fetch will automatically set Content-Type with correct boundary when given FormData
+      const formData = await req.formData();
+      const templateId = formData.get("templateId") as string;
+      const rawData = formData.get("data");
+      let dataObj: Record<string, any> = {};
+      if (typeof rawData === "string") {
+        try {
+          dataObj = JSON.parse(rawData);
+        } catch {
+          dataObj = {};
+        }
+      }
+      const imageFile = formData.get("image");
+      if (imageFile && imageFile instanceof Blob) {
+        const buffer = Buffer.from(await imageFile.arrayBuffer());
+        const base64 = buffer.toString("base64");
+        const mime = imageFile.type || "image/jpeg";
+        dataObj["Attached Photo"] = `data:${mime};base64,${base64}`;
+      }
+      bodyPayload = JSON.stringify({ templateId, data: dataObj });
     } else {
       bodyPayload = JSON.stringify(await req.json());
-      headers["Content-Type"] = "application/json";
     }
 
     const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/records`, {
@@ -37,6 +56,8 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
   const token = cookieStore.get("access_token")?.value;
+  const incomingAuth = req.headers.get("authorization");
+  const authToken = incomingAuth || (token ? `Bearer ${token}` : "");
   
   // Forward query params
   const { searchParams } = new URL(req.url);
@@ -50,7 +71,7 @@ export async function GET(req: NextRequest) {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": token ? `Bearer ${token}` : "",
+        "Authorization": authToken,
       },
     });
 
