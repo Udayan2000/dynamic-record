@@ -4,6 +4,7 @@ import { getOAuthClient, getRedirectUri } from "@/lib/google";
 import { google } from "googleapis";
 import { Readable } from "stream";
 import { getSession } from "@/lib/auth";
+import { getBackendBaseUrl } from "@/lib/api-config";
 
 export const maxDuration = 60; 
 export const dynamic = 'force-dynamic';
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized App" }, { status: 401 });
     }
 
-    const API_BASE = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001/api";
+    const API_BASE = getBackendBaseUrl();
     const profileRes = await fetch(`${API_BASE}/admin/profile`, {
       headers: { Authorization: `Bearer ${session.accessToken}` },
     });

@@ -16,7 +16,8 @@ export function useLogin() {
     onSuccess: (data: any) => {
       setSession(data.user, data.token);
       toast.success(`Welcome back!`); 
-      router.push("/admin/dashboard");
+      const target = data?.role === "employee" ? "/employee/dashboard" : "/admin/dashboard";
+      window.location.href = target;
     },
     onError: (error: unknown) => {
       const message =

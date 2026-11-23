@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse, NextRequest } from "next/server";
+import { getBackendBaseUrl } from "@/lib/api-config";
 
 export async function PUT(
   req: NextRequest,
@@ -13,7 +14,8 @@ export async function PUT(
   const body = await req.json();
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/records/${id}`, {
+    const backendUrl = getBackendBaseUrl();
+    const response = await fetch(`${backendUrl}/records/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -41,7 +43,8 @@ export async function DELETE(
   const authToken = incomingAuth || (token ? `Bearer ${token}` : "");
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/records/${id}`, {
+    const backendUrl = getBackendBaseUrl();
+    const response = await fetch(`${backendUrl}/records/${id}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",

@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse, NextRequest } from "next/server";
+import { getBackendBaseUrl } from "@/lib/api-config";
 
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies();
@@ -39,7 +40,8 @@ export async function POST(req: NextRequest) {
       bodyPayload = JSON.stringify(await req.json());
     }
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/records`, {
+    const backendUrl = getBackendBaseUrl();
+    const response = await fetch(`${backendUrl}/records`, {
       method: "POST",
       headers,
       body: bodyPayload,
@@ -62,9 +64,10 @@ export async function GET(req: NextRequest) {
   // Forward query params
   const { searchParams } = new URL(req.url);
   const queryString = searchParams.toString();
+  const backendUrl = getBackendBaseUrl();
   const url = queryString 
-    ? `${process.env.NEXT_PUBLIC_BASE_URL}/records?${queryString}`
-    : `${process.env.NEXT_PUBLIC_BASE_URL}/records`;
+    ? `${backendUrl}/records?${queryString}`
+    : `${backendUrl}/records`;
 
   try {
     const response = await fetch(url, {

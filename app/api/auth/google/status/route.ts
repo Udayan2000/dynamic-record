@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getSession } from "@/lib/auth";
+import { getBackendBaseUrl } from "@/lib/api-config";
 
 export async function GET() {
   const session = await getSession();
@@ -18,7 +19,7 @@ export async function GET() {
   let backendRefreshToken = "";
 
   try {
-    const API_BASE = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001/api";
+    const API_BASE = getBackendBaseUrl();
     const res = await fetch(`${API_BASE}/admin/profile`, {
       headers: { Authorization: `Bearer ${session.accessToken}` },
     });
