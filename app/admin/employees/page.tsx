@@ -6,7 +6,7 @@ import Adminemployeepage from "./component/Adminemployeepage";
 export default function EmployeesPage() {
     return (
         <section className="w-full bg-card border border-border rounded-lg p-4 shadow-xs">
-            <Card className=" border-0! shadow-none! p-0! bg-transparent!">
+            <Card className=" border-0! shadow-none! p-0! bg-transparent! mb-2!">
                 <CardHeader className="p-0!">
                     <CardTitle>Employees</CardTitle>
                     <CardDescription>Manage profiles, roles, and access.</CardDescription>

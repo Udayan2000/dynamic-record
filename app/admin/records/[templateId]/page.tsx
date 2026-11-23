@@ -1081,7 +1081,7 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
           </div>
 
           <div className="w-full">
-            <div className="h-[calc(100vh-306px)] overflow-y-auto overflow-x-auto w-full relative table-scrollbar">
+            <div className="h-[calc(100vh-308px)] overflow-y-auto overflow-x-auto w-full relative table-scrollbar">
               <table className="w-full text-left text-sm text-foreground whitespace-nowrap min-w-[850px] border-collapse">
                 <thead className="sticky top-0 z-20 bg-muted border-b border-border shadow-xs">
                   <tr>
