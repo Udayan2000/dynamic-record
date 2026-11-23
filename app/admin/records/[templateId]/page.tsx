@@ -44,6 +44,7 @@ import {
   ZoomOut,
   Maximize2,
   ChevronDown,
+  SlidersHorizontal,
 } from "lucide-react";
 import React from "react";
 import { toast } from "sonner";
@@ -625,6 +626,11 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
   const [isExporting, setIsExporting] = useState(false);
   const hasAutoExported = useRef(false);
 
+  // Export Modal & Custom Image Naming States
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [namingSlots, setNamingSlots] = useState<[string, string, string, string]>(["", "", "", ""]);
+  const [namingSeparator, setNamingSeparator] = useState<string>("_");
+
   // Modal States
   const [viewRecord, setViewRecord] = useState<any>(null);
   const [editRecord, setEditRecord] = useState<any>(null);
@@ -666,6 +672,59 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
     const activeUrl = url || selectedImage || "";
     const activeRecord = record || selectedImageRecord || viewRecord;
 
+    const ext =
+      activeUrl.includes("image/jpeg") || activeUrl.toLowerCase().endsWith(".jpg") || activeUrl.toLowerCase().endsWith(".jpeg")
+        ? ".jpg"
+        : activeUrl.includes("image/webp") || activeUrl.toLowerCase().endsWith(".webp")
+        ? ".webp"
+        : ".png";
+
+    if (activeRecord) {
+      const activeSlots = namingSlots.filter((s) => s && s.trim() !== "");
+      if (activeSlots.length > 0) {
+        const parts = activeSlots
+          .map((slot) => {
+            let val = "";
+            const cleanSlot = slot.trim();
+            if (cleanSlot.toLowerCase() === "submitter name") {
+              val = activeRecord.submitterName && activeRecord.submitterName !== "Unknown" ? activeRecord.submitterName : "";
+            } else if (cleanSlot.toLowerCase() === "record id") {
+              val = activeRecord._id ? String(activeRecord._id).slice(-6) : "";
+            } else if (cleanSlot.toLowerCase() === "submission date") {
+              val = activeRecord.createdAt ? new Date(activeRecord.createdAt).toISOString().split("T")[0] : "";
+            } else {
+              if (activeRecord.data) {
+                if (activeRecord.data[cleanSlot] !== undefined && activeRecord.data[cleanSlot] !== null) {
+                  const raw = activeRecord.data[cleanSlot];
+                  val = Array.isArray(raw) ? raw.join(namingSeparator) : String(raw);
+                } else {
+                  const foundKey = Object.keys(activeRecord.data).find(
+                    (k) => k.toLowerCase() === cleanSlot.toLowerCase()
+                  );
+                  if (foundKey && activeRecord.data[foundKey] !== undefined && activeRecord.data[foundKey] !== null) {
+                    const raw = activeRecord.data[foundKey];
+                    val = Array.isArray(raw) ? raw.join(namingSeparator) : String(raw);
+                  }
+                }
+              }
+            }
+            return String(val)
+              .replace(/[/\\?%*:|"<>#]/g, "")
+              .trim()
+              .replace(/\s+/g, namingSeparator);
+          })
+          .filter(Boolean);
+
+        if (parts.length > 0) {
+          return `${parts.join(namingSeparator || "_")}${ext}`;
+        }
+      }
+
+      const submitter = activeRecord.submitterName ? `${activeRecord.submitterName.replace(/\s+/g, "_")}_` : "";
+      const recordRef = activeRecord._id ? activeRecord._id.slice(-6) : "photo";
+      return `${submitter}Attachment_${recordRef}${ext}`;
+    }
+
     try {
       if (activeUrl.startsWith("http://") || activeUrl.startsWith("https://") || activeUrl.startsWith("/")) {
         const cleanUrl = activeUrl.split("?")[0].split("#")[0];
@@ -677,18 +736,6 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
       }
     } catch {
       // fallback
-    }
-
-    if (activeRecord) {
-      const submitter = activeRecord.submitterName ? `${activeRecord.submitterName.replace(/\s+/g, "_")}_` : "";
-      const recordRef = activeRecord._id ? activeRecord._id.slice(-6) : "photo";
-      const ext =
-        activeUrl.includes("image/jpeg") || activeUrl.toLowerCase().endsWith(".jpg") || activeUrl.toLowerCase().endsWith(".jpeg")
-          ? ".jpg"
-          : activeUrl.includes("image/webp") || activeUrl.toLowerCase().endsWith(".webp")
-          ? ".webp"
-          : ".png";
-      return `${submitter}Attachment_${recordRef}${ext}`;
     }
 
     return "photo_attachment.png";
@@ -800,6 +847,58 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
     enabled: !!templateId,
   });
 
+  useEffect(() => {
+    if (!template || !templateId) return;
+
+    try {
+      const saved = localStorage.getItem(`image_naming_${templateId}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed.slots) && parsed.slots.length === 4) {
+          setNamingSlots([
+            parsed.slots[0] || "",
+            parsed.slots[1] || "",
+            parsed.slots[2] || "",
+            parsed.slots[3] || "",
+          ]);
+          if (parsed.separator) setNamingSeparator(parsed.separator);
+          return;
+        }
+      }
+    } catch {}
+
+    if (template.fields && template.fields.length > 0) {
+      const findField = (keywords: string[]) => {
+        return template.fields.find((f) =>
+          keywords.some((k) => f.label.toLowerCase().includes(k))
+        )?.label;
+      };
+
+      const classField = findField(["class", "grade", "standard"]);
+      const secField = findField(["section", "group", "batch"]);
+      const rollField = findField(["roll", "admission", "id", "reg"]);
+      const nameField = findField(["name", "student", "employee"]);
+
+      if (classField || secField || rollField || nameField) {
+        setNamingSlots([
+          classField || template.fields[0]?.label || "",
+          secField || template.fields[1]?.label || "",
+          rollField || template.fields[2]?.label || "",
+          nameField || "Submitter Name",
+        ]);
+      } else {
+        setNamingSlots([
+          template.fields[0]?.label || "Submitter Name",
+          template.fields[1]?.label || "",
+          template.fields[2]?.label || "",
+          template.fields[3]?.label || "",
+        ]);
+      }
+    } else {
+      setNamingSlots(["Submitter Name", "", "", ""]);
+    }
+  }, [template, templateId]);
+
   const { data: recordsData, isLoading: isLoadingRecords, isFetching: isFetchingRecords } = useQuery({
     queryKey: ["records", templateId, page, debouncedSearch, perPage],
     queryFn: () => recordsApi.getRecords({ templateId: templateId as string, search: debouncedSearch, page, limit: perPage }),
@@ -851,7 +950,10 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
 
       const headers = ["Submitted By", "Email", "Date Submitted"];
       template.fields.forEach((f) => headers.push(f.label));
-      if (template.cameraAccess) headers.push("Attached Photo");
+      if (template.cameraAccess) {
+        headers.push("Image File Name");
+        headers.push("Attached Photo");
+      }
 
       const rows = recordsToExport.map((record: any) => {
         const rowData = [
@@ -871,6 +973,7 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
 
         if (template.cameraAccess) {
           const photo = record.data?.["Attached Photo"];
+          rowData.push(`"${photo ? getImageName(photo, record) : "None"}"`);
           rowData.push(`"${photo ? "Image Attached" : "None"}"`);
         }
 
@@ -899,8 +1002,28 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
     window.location.href = `/api/auth/google?returnUrl=${encodeURIComponent(returnPath)}`;
   };
 
-  const handleExportDrive = async () => {
+  const handleExportDrive = async (customSlots?: string[], customSep?: string) => {
     if (!template || !templateId) return;
+
+    let activeSlots = customSlots;
+    let activeSep = customSep || namingSeparator;
+
+    if (!activeSlots || activeSlots.length === 0) {
+      try {
+        const saved = localStorage.getItem(`image_naming_${templateId}`);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed.slots)) activeSlots = parsed.slots;
+          if (parsed.separator) activeSep = parsed.separator;
+        }
+      } catch {}
+    }
+
+    if (!activeSlots || activeSlots.length === 0) {
+      activeSlots = namingSlots;
+    }
+
+    const validSlots = (activeSlots || []).filter((s) => s && s.trim() !== "");
 
     try {
       setIsExporting(true);
@@ -917,7 +1040,9 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
           templateId: templateId as string,
           search: debouncedSearch,
           fields: template.fields,
-          hasCameraAccess: template.cameraAccess
+          hasCameraAccess: template.cameraAccess,
+          imageNamingFields: validSlots,
+          separator: activeSep || "_"
         }),
         signal: controller.signal
       });
@@ -1039,10 +1164,10 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
               <div className="grid grid-cols-2 gap-2 w-full sm:flex sm:w-auto sm:items-center sm:justify-end">
                 <div className="inline-flex rounded-md shadow-xs w-full sm:w-auto">
                   <Button
-                    onClick={handleExportDrive}
+                    onClick={() => setIsExportModalOpen(true)}
                     disabled={isExporting}
                     variant="default"
-                    className="w-full sm:w-auto h-10 sm:h-9 text-white justify-center font-medium active:scale-[0.98] transition-all touch-manipulation rounded-r-none"
+                    className="w-full sm:w-auto h-10 sm:h-9 text-white justify-center font-medium active:scale-[0.98] transition-all touch-manipulation rounded-r-none cursor-pointer"
                   >
                     {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CloudDownload className="mr-2 h-4 w-4" />}
                     <span>Drive Export</span>
@@ -1059,8 +1184,11 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={handleExportDrive} className="cursor-pointer">
-                        <CloudDownload className="mr-2 h-4 w-4 text-muted-foreground" /> Export to Google Drive
+                      <DropdownMenuItem onClick={() => setIsExportModalOpen(true)} className="cursor-pointer">
+                        <SlidersHorizontal className="mr-2 h-4 w-4 text-muted-foreground" /> Configure & Export to Drive
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleExportDrive()} className="cursor-pointer">
+                        <CloudDownload className="mr-2 h-4 w-4 text-muted-foreground" /> Quick Export to Google Drive
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={handleSwitchDriveAccount} className="cursor-pointer">
                         <RotateCw className="mr-2 h-4 w-4 text-muted-foreground" /> Switch Google Account
@@ -1786,6 +1914,183 @@ export default function TemplateRecordsPage({ params }: { params: Promise<{ temp
               Delete
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Export & Image Naming Modal */}
+      <Dialog open={isExportModalOpen} onOpenChange={setIsExportModalOpen}>
+        <DialogContent className="w-[95vw] max-w-xl p-0 gap-0 overflow-hidden flex flex-col rounded-xl border-[0.5px] border-border bg-card shadow-2xl">
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-border bg-muted/20 shrink-0">
+            <div>
+              <DialogTitle className="text-base sm:text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
+                <CloudDownload className="h-5 w-5 text-primary" />
+                Export & Image Naming Options
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                Customize how attached photo files will be named using up to 4 data fields.
+              </DialogDescription>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="p-5 sm:p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+            {/* 4 Fields Grid */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Layers className="h-3.5 w-3.5 text-primary" />
+                  Choose 4 Data Fields for Image Name
+                </Label>
+                <span className="text-[11px] text-muted-foreground">Order: Slot 1 → 4</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[0, 1, 2, 3].map((slotIndex) => {
+                  const slotLabel = `Field ${slotIndex + 1}`;
+                  return (
+                    <div key={slotIndex} className="space-y-1.5">
+                      <Label htmlFor={`naming-slot-${slotIndex}`} className="text-xs font-medium text-muted-foreground flex items-center justify-between">
+                        <span>{slotLabel}</span>
+                        {slotIndex === 0 && <span className="text-[10px] text-primary font-semibold">Primary</span>}
+                      </Label>
+                      <select
+                        id={`naming-slot-${slotIndex}`}
+                        value={namingSlots[slotIndex]}
+                        onChange={(e) => {
+                          const updated = [...namingSlots] as [string, string, string, string];
+                          updated[slotIndex] = e.target.value;
+                          setNamingSlots(updated);
+                        }}
+                        className="h-10 w-full rounded-md border-[0.5px] border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-[0.5px] focus:ring-ring focus-visible:outline-none focus-visible:ring-[0.5px] focus-visible:ring-ring focus-visible:border-[0.5px] cursor-pointer shadow-2xs"
+                      >
+                        <option value="">(None - Leave Empty)</option>
+                        <optgroup label="Standard Fields">
+                          <option value="Submitter Name">👤 Submitter Name</option>
+                          <option value="Record ID">🆔 Record ID</option>
+                          <option value="Submission Date">📅 Submission Date</option>
+                        </optgroup>
+                        {template?.fields && template.fields.length > 0 && (
+                          <optgroup label="Template Form Fields">
+                            {template.fields.map((f) => (
+                              <option key={f.id || f.label} value={f.label}>
+                                {f.label} ({f.type})
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                      </select>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Separator Selection */}
+            <div className="space-y-1.5">
+              <Label htmlFor="naming-separator" className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                <Hash className="h-3.5 w-3.5 text-primary" />
+                Field Separator
+              </Label>
+              <select
+                id="naming-separator"
+                value={namingSeparator}
+                onChange={(e) => setNamingSeparator(e.target.value)}
+                className="h-9 w-full sm:w-60 rounded-md border-[0.5px] border-input bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-[0.5px] focus:ring-ring focus-visible:outline-none focus-visible:ring-[0.5px] focus-visible:ring-ring focus-visible:border-[0.5px] cursor-pointer shadow-2xs"
+              >
+                <option value="_">_ (Underscore - Recommended)</option>
+                <option value="-">- (Hyphen)</option>
+                <option value=".">. (Dot)</option>
+                <option value=" ">  (Space)</option>
+              </select>
+            </div>
+
+            {/* Live Filename Preview Box */}
+            <div className="p-3.5 rounded-lg border border-border bg-muted/40 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <FileText className="h-4 w-4 text-primary" />
+                  Live Image File Name Preview
+                </span>
+                <span className="text-[11px] font-mono text-muted-foreground uppercase px-1.5 py-0.5 rounded bg-background border border-border/60">
+                  {namingSeparator === " " ? "space" : `sep: "${namingSeparator}"`}
+                </span>
+              </div>
+              <div className="p-2.5 rounded-md bg-background border border-border/80 font-mono text-xs sm:text-sm font-semibold text-primary break-all shadow-2xs">
+                {(() => {
+                  const sample = recordsData?.records?.[0];
+                  const activeSlots = namingSlots.filter((s) => s && s.trim() !== "");
+                  if (activeSlots.length === 0) {
+                    return "Attachment_photo.jpg";
+                  }
+                  const parts = activeSlots
+                    .map((slot) => {
+                      let val = "";
+                      if (slot === "Submitter Name") {
+                        val = sample?.submitterName || "John_Doe";
+                      } else if (slot === "Record ID") {
+                        val = sample?._id ? String(sample._id).slice(-6) : "4b9e2f";
+                      } else if (slot === "Submission Date") {
+                        val = sample?.createdAt ? new Date(sample.createdAt).toISOString().split("T")[0] : "2026-11-24";
+                      } else {
+                        val = sample?.data?.[slot] || slot.replace(/\s+/g, "");
+                      }
+                      return String(val)
+                        .replace(/[/\\?%*:|"<>#]/g, "")
+                        .trim()
+                        .replace(/\s+/g, namingSeparator);
+                    })
+                    .filter(Boolean);
+
+                  return `${parts.join(namingSeparator || "_")}.jpg`;
+                })()}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                {recordsData?.records?.length
+                  ? "Showing live preview populated with data from your actual records."
+                  : "Preview shown with placeholder fields. Select your preferred fields above."}
+              </p>
+            </div>
+          </div>
+
+          {/* Footer Actions */}
+          <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-2.5 px-5 sm:px-6 py-4 border-t border-border bg-muted/20 shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsExportModalOpen(false)}
+              disabled={isExporting}
+              className="w-full sm:w-auto cursor-pointer"
+            >
+              Cancel
+            </Button>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                disabled={isExporting}
+                onClick={() => {
+                  try {
+                    localStorage.setItem(
+                      `image_naming_${templateId}`,
+                      JSON.stringify({
+                        slots: namingSlots,
+                        separator: namingSeparator,
+                      })
+                    );
+                  } catch {}
+                  setIsExportModalOpen(false);
+                  handleExportDrive(namingSlots, namingSeparator);
+                }}
+                className="w-full sm:w-auto bg-primary text-primary-foreground font-medium shadow-xs hover:bg-primary/90 cursor-pointer"
+              >
+                {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CloudDownload className="mr-2 h-4 w-4" />}
+                Export to Google Drive
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

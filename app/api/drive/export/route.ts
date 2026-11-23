@@ -40,6 +40,89 @@ const escapeDriveQueryName = (name: string) => {
   return name.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 };
 
+function buildCustomImageName(
+  record: any,
+  imageNamingFields: string[] | undefined,
+  separator: string = "_",
+  defaultFallbackName: string,
+  mimeType: string = "image/jpeg"
+): string {
+  if (!imageNamingFields || !Array.isArray(imageNamingFields) || imageNamingFields.length === 0) {
+    return defaultFallbackName;
+  }
+
+  const validFields = imageNamingFields.filter(
+    (f) => f && typeof f === "string" && f.toLowerCase() !== "none" && f.trim() !== ""
+  );
+
+  if (validFields.length === 0) {
+    return defaultFallbackName;
+  }
+
+  const parts: string[] = [];
+  const cleanSep = separator || "_";
+
+  for (const fieldName of validFields) {
+    let val = "";
+    const cleanFieldName = fieldName.trim();
+
+    if (
+      cleanFieldName.toLowerCase() === "submitter name" ||
+      cleanFieldName.toLowerCase() === "submittername"
+    ) {
+      val = record.submitterName && record.submitterName !== "Unknown" ? record.submitterName : "";
+    } else if (
+      cleanFieldName.toLowerCase() === "submitter email" ||
+      cleanFieldName.toLowerCase() === "submitteremail"
+    ) {
+      val = record.submitterEmail || "";
+    } else if (
+      cleanFieldName.toLowerCase() === "record id" ||
+      cleanFieldName.toLowerCase() === "recordid" ||
+      cleanFieldName.toLowerCase() === "id"
+    ) {
+      val = record._id ? String(record._id).slice(-6) : "";
+    } else if (
+      cleanFieldName.toLowerCase() === "submission date" ||
+      cleanFieldName.toLowerCase() === "date"
+    ) {
+      val = record.createdAt ? new Date(record.createdAt).toISOString().split("T")[0] : "";
+    } else {
+      if (record.data) {
+        if (record.data[cleanFieldName] !== undefined && record.data[cleanFieldName] !== null) {
+          const raw = record.data[cleanFieldName];
+          val = Array.isArray(raw) ? raw.join(cleanSep) : String(raw);
+        } else {
+          const foundKey = Object.keys(record.data).find(
+            (k) => k.toLowerCase() === cleanFieldName.toLowerCase()
+          );
+          if (foundKey && record.data[foundKey] !== undefined && record.data[foundKey] !== null) {
+            const raw = record.data[foundKey];
+            val = Array.isArray(raw) ? raw.join(cleanSep) : String(raw);
+          }
+        }
+      }
+    }
+
+    if (val && typeof val === "string") {
+      const sanitized = val
+        .replace(/[/\\?%*:|"<>#]/g, "")
+        .trim()
+        .replace(/\s+/g, cleanSep);
+      if (sanitized) {
+        parts.push(sanitized);
+      }
+    }
+  }
+
+  if (parts.length === 0) {
+    return defaultFallbackName;
+  }
+
+  const ext = mimeType.includes("png") ? ".png" : mimeType.includes("webp") ? ".webp" : ".jpg";
+  return `${parts.join(cleanSep)}${ext}`;
+}
+
 export async function POST(request: Request) {
   try {
     const cookieStore = await cookies();
@@ -126,7 +209,15 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { templateName, fields, hasCameraAccess, templateId, search = "" } = body;
+    const { 
+      templateName, 
+      fields, 
+      hasCameraAccess, 
+      templateId, 
+      search = "",
+      imageNamingFields = [],
+      separator = "_"
+    } = body;
 
     if (!templateName || !templateId) {
       return NextResponse.json({ error: "Missing template data" }, { status: 400 });
@@ -254,7 +345,10 @@ export async function POST(request: Request) {
       }
 
       const headers = ["Submitted By", "Email", "Date Submitted", ...fields.map((f: any) => f.label)];
-      if (hasCameraAccess) headers.push("Photo Drive Link");
+      if (hasCameraAccess) {
+        headers.push("Image File Name");
+        headers.push("Photo Drive Link");
+      }
 
       const csvRows = [headers.join(",")];
 
@@ -271,6 +365,7 @@ export async function POST(request: Request) {
         });
 
         let photoLink = "None";
+        let finalImageName = "None";
         if (hasCameraAccess && record.data?.["Attached Photo"] && imageFolderId) {
           const photoData = record.data["Attached Photo"];
           
@@ -304,10 +399,19 @@ export async function POST(request: Request) {
               }
               const recordRef = record._id ? String(record._id).slice(-6) : Math.random().toString(36).slice(2, 6);
               
-              const imageName = !group.isStandardStructure
+              const defaultImageName = !group.isStandardStructure
                 ? `${personName}_Attachment_${recordRef}.jpg`.replace(/\s+/g, '_')
                 : `${group.classRoman}_${group.section}_${group.roll}_${personName}.jpg`.replace(/\s+/g, '_');
               
+              const imageName = buildCustomImageName(
+                record,
+                imageNamingFields,
+                separator,
+                defaultImageName,
+                mimeType
+              );
+              finalImageName = imageName;
+
               const uploadedImg = await uploadOrUpdateFile(imageName, mimeType, imageFolderId, buffer);
               
               if (uploadedImg?.id) {
@@ -328,7 +432,10 @@ export async function POST(request: Request) {
           }
         }
 
-        if (hasCameraAccess) rowData.push(`"${photoLink}"`);
+        if (hasCameraAccess) {
+          rowData.push(`"${finalImageName}"`);
+          rowData.push(`"${photoLink}"`);
+        }
         csvRows.push(rowData.join(","));
       }
 
