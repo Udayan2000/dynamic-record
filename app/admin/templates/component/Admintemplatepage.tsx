@@ -74,7 +74,7 @@ export default function Admintemplatepage() {
 
     return (
         <div className="flex flex-col mt-3!">
-            <div className="flex w-full flex-1 min-h-0 flex-col rounded-lg border border-border bg-card text-card-foreground shadow-xs mt-0 overflow-hidden">
+            <div className="flex w-full flex-1 min-h-0 flex-col rounded-sm border border-border bg-card text-card-foreground shadow-xs mt-0 overflow-hidden">
                 <div className="flex flex-col sm:flex-row justify-between gap-3 border-b border-border p-3 sm:p-4 bg-card">
                     <div className="w-full sm:max-w-[400px]">
                         <Input
@@ -97,7 +97,7 @@ export default function Admintemplatepage() {
                     </div>
                 </div>
 
-                <div className="w-full p-3 sm:p-4 min-h-[calc(100vh-312px)] max-h-[calc(100vh-312px)] overflow-y-auto">
+                <div className="w-full p-3 sm:p-4 min-h-[calc(100vh-312px)] max-h-[calc(100vh-312px)] overflow-y-auto table-scrollbar">
                     {isLoading ? (
                         <div className="flex items-center justify-center h-[300px] text-muted-foreground">
                             Loading templates...

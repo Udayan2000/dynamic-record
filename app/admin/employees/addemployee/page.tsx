@@ -6,10 +6,21 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, UserPlus, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { 
+    ArrowLeft, 
+    UserPlus, 
+    Loader2, 
+    User, 
+    Mail, 
+    MapPin, 
+    ShieldCheck, 
+    AlertCircle 
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { employeeService } from "@/services/employee-services";
+import { toast } from "sonner";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -66,8 +77,7 @@ function validate(values: EmployeeFormValues): FormErrors {
 }
 
 // ---------------------------------------------------------------------------
-// Status segmented control — kept local since it's a two-option toggle,
-// not worth pulling in a full Select/RadioGroup dependency for.
+// Status segmented control — accessible, theme-aware dual selection
 // ---------------------------------------------------------------------------
 
 function StatusToggle({
@@ -77,19 +87,20 @@ function StatusToggle({
     value: EmployeeStatus;
     onChange: (status: EmployeeStatus) => void;
 }) {
-    const options: { label: string; value: EmployeeStatus }[] = [
-        { label: "Active", value: "active" },
-        { label: "Inactive", value: "inactive" },
+    const options: { label: string; value: EmployeeStatus; description: string }[] = [
+        { label: "Active", value: "active", description: "Permit system login and record entries" },
+        { label: "Inactive", value: "inactive", description: "Temporarily block system access" },
     ];
 
     return (
         <div
             role="radiogroup"
             aria-label="Employee status"
-            className="inline-flex"
+            className="grid grid-cols-1 sm:grid-cols-2 gap-3"
         >
             {options.map((opt) => {
                 const isSelected = value === opt.value;
+                const isActiveOpt = opt.value === "active";
                 return (
                     <button
                         key={opt.value}
@@ -98,25 +109,49 @@ function StatusToggle({
                         aria-checked={isSelected}
                         onClick={() => onChange(opt.value)}
                         className={cn(
-                            "flex items-center gap-1.5 rounded-[6px] px-3.5 py-1.5 text-sm font-medium transition-colors",
+                            "flex items-start gap-3 p-3.5 rounded-lg border text-left cursor-pointer transition-all shadow-2xs select-none",
                             isSelected
-                                ? opt.value === "active"
-                                    ? "bg-emerald-50 text-emerald-700 shadow-sm ring-1 ring-emerald-200"
-                                    : "bg-zinc-200 text-zinc-700 shadow-sm ring-1 ring-zinc-300"
-                                : "text-zinc-500 hover:text-zinc-700"
+                                ? isActiveOpt
+                                    ? "bg-emerald-500/10 border-emerald-500/40 text-foreground ring-1 ring-emerald-500/30"
+                                    : "bg-amber-500/10 border-amber-500/40 text-foreground ring-1 ring-amber-500/30"
+                                : "bg-card hover:bg-muted/40 border-border text-muted-foreground"
                         )}
                     >
-                        <span
+                        <div
                             className={cn(
-                                "h-1.5 w-1.5 rounded-full",
+                                "h-4 w-4 rounded-full border-[1.5px] flex items-center justify-center shrink-0 mt-0.5 transition-colors",
                                 isSelected
-                                    ? opt.value === "active"
-                                        ? "bg-emerald-500"
-                                        : "bg-zinc-500"
-                                    : "bg-zinc-300"
+                                    ? isActiveOpt
+                                        ? "border-emerald-500 bg-emerald-500 text-white"
+                                        : "border-amber-500 bg-amber-500 text-white"
+                                    : "border-muted-foreground/50 bg-transparent"
                             )}
-                        />
-                        {opt.label}
+                        >
+                            {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+                        </div>
+                        <div className="space-y-0.5 min-w-0">
+                            <div className="flex items-center gap-2">
+                                <span className={cn("text-sm font-semibold", isSelected ? "text-foreground" : "text-muted-foreground")}>
+                                    {opt.label}
+                                </span>
+                                {isSelected && (
+                                    <Badge
+                                        variant="outline"
+                                        className={cn(
+                                            "text-[10px] px-1.5 py-0 font-medium",
+                                            isActiveOpt
+                                                ? "border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
+                                                : "border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/10"
+                                        )}
+                                    >
+                                        Selected
+                                    </Badge>
+                                )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                {opt.description}
+                            </p>
+                        </div>
                     </button>
                 );
             })}
@@ -125,12 +160,13 @@ function StatusToggle({
 }
 
 // ---------------------------------------------------------------------------
-// Field wrapper — keeps label / input / error markup consistent and DRY
+// Field wrapper — keeps label / icon / input / error markup consistent and DRY
 // ---------------------------------------------------------------------------
 
 function Field({
     id,
     label,
+    icon,
     error,
     required,
     children,
@@ -138,21 +174,24 @@ function Field({
 }: {
     id: string;
     label: string;
+    icon?: React.ReactNode;
     error?: string;
     className?: string;
     required?: boolean;
     children: React.ReactNode;
 }) {
     return (
-        <div className={`grid gap-1.5 ${className}`}>
-            <Label htmlFor={id}>
-                {label}
-                {required && <span className="ml-0.5 text-red-500">*</span>}
+        <div className={cn("space-y-1.5", className)}>
+            <Label htmlFor={id} className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                {icon}
+                <span>{label}</span>
+                {required && <span className="text-destructive">*</span>}
             </Label>
             {children}
             {error && (
-                <p id={`${id}-error`} className="text-xs font-medium text-red-500">
-                    {error}
+                <p id={`${id}-error`} className="text-xs font-medium text-destructive flex items-center gap-1 mt-1">
+                    <AlertCircle className="h-3 w-3 shrink-0" />
+                    <span>{error}</span>
                 </p>
             )}
         </div>
@@ -165,6 +204,7 @@ function Field({
 
 export default function AddEmployeePage() {
     const router = useRouter();
+    const queryClient = useQueryClient();
 
     const [values, setValues] = useState<EmployeeFormValues>(INITIAL_VALUES);
     const [errors, setErrors] = useState<FormErrors>({});
@@ -173,11 +213,14 @@ export default function AddEmployeePage() {
     const mutation = useMutation({
         mutationFn: (data: any) => employeeService.createEmployee(data),
         onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["employees"] });
+            toast.success("Employee added successfully");
             router.push("/admin/employees");
-            router.refresh();
         },
-        onError: () => {
-            setSubmitError("Couldn't add the employee. Try again.");
+        onError: (err: any) => {
+            const message = err?.response?.data?.message || err?.message || "Couldn't add the employee. Try again.";
+            setSubmitError(message);
+            toast.error(message);
         }
     });
 
@@ -210,97 +253,171 @@ export default function AddEmployeePage() {
     }
 
     return (
-        <div className="w-full bg-[#fff] border border-[#f1f5fe]! rounded-sm    h-full">
-            <div className=" border-b  flex justify-between items-center p-2">
-
-                <Button type="button" className="w-fit cursor-pointer" variant="secondary" onClick={() => router.back()}>
-                    <ArrowLeft className="h-4 w-4" />
-                    Back to employees
-                </Button>
-
-            </div>
-            <div className="p-2 ">
-                <div className="flex items-center gap-2.5 pb-4 ">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e7ecf7]">
-                        <UserPlus className="h-4.5 w-4.5 text-zinc-600" />
-                    </div>
-                    <div>
-                        <h1 className="text-base font-semibold text-zinc-800">Add employee</h1>
-                        <p className="text-xs text-zinc-400">Create a new employee record.</p>
+        <div className="w-full  bg-card border border-border text-card-foreground rounded-lg p-4 shadow-xs h-[calc(100dvh-9.5rem)] md:h-[calc(100dvh-5.5rem)] flex flex-col min-h-0 overflow-hidden">
+            {/* Top Navigation & Header Card */}
+            <div className="shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2 sm:p-2 rounded-sm border border-border bg-card text-card-foreground shadow-xs">
+                <div className="flex items-center gap-3 min-w-0">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => router.back()}
+                        className="shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
+                        title="Back to employees"
+                    >
+                        <ArrowLeft className="h-5 w-5" />
+                    </Button>
+                  
+                    <div className="min-w-0">
+                        <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground truncate">
+                            Add New Employee
+                        </h1>
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                            Create an employee record and configure operational permissions.
+                        </p>
                     </div>
                 </div>
-                <div className="h-full p-4 overflow-y-auto">
-                <form onSubmit={handleSubmit} noValidate className="grid ">
-                    <Field id="name" label="Employee name" error={errors.name} required className="mb-5">
-                        <Input
-                            id="name"
-                            placeholder="Ananya Roy"
-                            value={values.name}
-                            onChange={(e) => updateField("name", e.target.value)}
-                            aria-invalid={!!errors.name}
-                            aria-describedby={errors.name ? "name-error" : undefined}
-                        />
-                    </Field>
 
-                    <Field id="email" label="Employee email" error={errors.email} required className="mb-5">
-                        <Input
-                            id="email"
-                            type="email"
-                            placeholder="ananya.roy@company.com"
-                            value={values.email}
-                            onChange={(e) => updateField("email", e.target.value)}
-                            aria-invalid={!!errors.email}
-                            aria-describedby={errors.email ? "email-error" : undefined}
-                        />
-                    </Field>
+                <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.back()}
+                        className="cursor-pointer text-xs sm:text-sm"
+                    >
+                        Cancel
+                    </Button>
+                </div>
+            </div>
 
-                    <Field id="address" label="Employee address" error={errors.address} required className="mb-5">
-                        <Input
+            {/* Main Form Card */}
+            <div className="flex-1 min-h-0 flex flex-col rounded-sm border border-border bg-card text-card-foreground shadow-xs overflow-hidden mt-3 sm:mt-4">
+                <form onSubmit={handleSubmit} noValidate className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                    {/* SCROLLABLE FORM FIELDS CONTAINER */}
+                    <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5 table-scrollbar">
+                        {submitError && (
+                            <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive flex items-center gap-2.5 animate-in fade-in">
+                                <AlertCircle className="h-4 w-4 shrink-0 text-destructive" />
+                                <span>{submitError}</span>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                            {/* Employee Name */}
+                            <Field
+                                id="name"
+                                label="Employee Name"
+                                icon={<User className="h-3.5 w-3.5 text-muted-foreground" />}
+                                error={errors.name}
+                                required
+                            >
+                                <Input
+                                    id="name"
+                                    placeholder="e.g. Ananya Roy"
+                                    value={values.name}
+                                    onChange={(e) => updateField("name", e.target.value)}
+                                    aria-invalid={!!errors.name}
+                                    aria-describedby={errors.name ? "name-error" : undefined}
+                                    className={cn(
+                                        "h-10 text-sm bg-background border-[0.5px] border-input placeholder:text-muted-foreground shadow-2xs focus-visible:ring-[0.5px] focus-visible:ring-ring focus-visible:border-[0.5px]",
+                                        errors.name && "border-destructive focus-visible:ring-destructive"
+                                    )}
+                                />
+                            </Field>
+
+                            {/* Employee Email */}
+                            <Field
+                                id="email"
+                                label="Employee Email"
+                                icon={<Mail className="h-3.5 w-3.5 text-muted-foreground" />}
+                                error={errors.email}
+                                required
+                            >
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    placeholder="e.g. ananya.roy@company.com"
+                                    value={values.email}
+                                    onChange={(e) => updateField("email", e.target.value)}
+                                    aria-invalid={!!errors.email}
+                                    aria-describedby={errors.email ? "email-error" : undefined}
+                                    className={cn(
+                                        "h-10 text-sm bg-background border-[0.5px] border-input placeholder:text-muted-foreground shadow-2xs focus-visible:ring-[0.5px] focus-visible:ring-ring focus-visible:border-[0.5px]",
+                                        errors.email && "border-destructive focus-visible:ring-destructive"
+                                    )}
+                                />
+                            </Field>
+                        </div>
+
+                        {/* Employee Address */}
+                        <Field
                             id="address"
-                            placeholder="Tarakeswar, Hooghly"
-                            value={values.address}
-                            onChange={(e) => updateField("address", e.target.value)}
-                            aria-invalid={!!errors.address}
-                            aria-describedby={errors.address ? "address-error" : undefined}
-                        />
-                    </Field>
+                            label="Employee Address"
+                            icon={<MapPin className="h-3.5 w-3.5 text-muted-foreground" />}
+                            error={errors.address}
+                            required
+                        >
+                            <Input
+                                id="address"
+                                placeholder="e.g. Tarakeswar, Hooghly"
+                                value={values.address}
+                                onChange={(e) => updateField("address", e.target.value)}
+                                aria-invalid={!!errors.address}
+                                aria-describedby={errors.address ? "address-error" : undefined}
+                                className={cn(
+                                    "h-10 text-sm bg-background border-[0.5px] border-input placeholder:text-muted-foreground shadow-2xs focus-visible:ring-[0.5px] focus-visible:ring-ring focus-visible:border-[0.5px]",
+                                    errors.address && "border-destructive focus-visible:ring-destructive"
+                                )}
+                            />
+                        </Field>
 
-                    <div className="grid gap-1.5 mb-5">
-                        <Label>Status</Label>
-                        <StatusToggle
-                            value={values.status}
-                            onChange={(status) => updateField("status", status)}
-                        />
+                        {/* Status */}
+                        <div className="space-y-2 pt-1">
+                            <Label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                                <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground" />
+                                Account Status
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                                Inactive employees cannot log in or record submissions.
+                            </p>
+                            <StatusToggle
+                                value={values.status}
+                                onChange={(status) => updateField("status", status)}
+                            />
+                        </div>
                     </div>
 
-                    {submitError && (
-                        <p className="rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-600">
-                            {submitError}
-                        </p>
-                    )}
-
-                    <div className="mt-2 flex items-center justify-end gap-2 border-t pt-4">
+                    {/* Form Action Footer - FIXED PINNED AT BOTTOM */}
+                    <div className="shrink-0 flex flex-col-reverse sm:flex-row items-center justify-end gap-3 px-4 sm:px-6 py-3.5 sm:py-4 border-t border-border bg-card">
                         <Button
                             type="button"
                             variant="outline"
                             onClick={() => router.back()}
                             disabled={mutation.isPending}
+                            className="w-full sm:w-auto cursor-pointer"
                         >
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={mutation.isPending}>
+                        <Button 
+                            type="submit" 
+                            disabled={mutation.isPending}
+                            className="w-full sm:w-auto cursor-pointer font-medium shadow-xs"
+                        >
                             {mutation.isPending ? (
                                 <>
-                                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                                    Adding...
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Adding Employee...
                                 </>
                             ) : (
-                                "Add employee"
+                                <>
+                                    <UserPlus className="mr-2 h-4 w-4" />
+                                    Add Employee
+                                </>
                             )}
                         </Button>
                     </div>
                 </form>
-                </div>
             </div>
         </div>
     );

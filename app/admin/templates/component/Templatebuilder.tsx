@@ -50,6 +50,7 @@ import {
   ListFilter,
   Radio as RadioIcon,
   CheckSquare,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -194,7 +195,7 @@ function ImageCaptureField({
   useEffect(() => () => stopCamera(), []);
 
   return (
-    <div className="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-xs">
+    <div className="rounded-sm border border-border bg-card text-card-foreground p-4 shadow-xs">
       <div className="flex items-center justify-between mb-1">
         <Label className="text-sm font-semibold text-foreground">Profile / upload image</Label>
         {isResizing && onSaveResize && (
@@ -652,59 +653,130 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
 
   return (
     <div>
-      <div className="w-full bg-card border border-border text-card-foreground rounded-lg p-4 shadow-xs">
+      <div className="w-full bg-card border border-border text-card-foreground rounded-sm p-4 shadow-xs">
         {isFetching && (
           <div className="absolute inset-0 bg-background/50 z-50 flex items-center justify-center backdrop-blur-xs">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         )}
         {/* Top action bar --------------------------------------------------- */}
-        <div className="mb-4 flex flex-col gap-3 rounded-lg border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between shadow-xs">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => router.back()} title="Back" className="self-end mb-1 text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-4 w-4" />
+        <div className="mb-4 flex flex-col gap-3.5 rounded-sm border border-border bg-card p-3 sm:p-4 sm:flex-row sm:items-center sm:justify-between shadow-xs text-card-foreground">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => router.back()}
+              title="Back to templates"
+              className="h-10 w-10 shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer rounded-sm self-start sm:self-center mt-0.5 sm:mt-0"
+            >
+              <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="template-name-input" className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Template Name</Label>
-                <Badge
-                  variant="outline"
+
+            <div className="flex justify-start items-start gap-4 w-full ">
+              {/* Header Label + Status Pill */}
+              <div className="flex flex-col items-start gap-2">
+                <Label
+                  htmlFor="template-name-input"
+                  className="text-xs font-semibold text-foreground flex items-center gap-1.5 tracking-wide"
+                >
+                 
+                  Template Name
+                </Label>
+
+               
+
+                {/* Active / Inactive Status Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowStatusConfirm(true)}
+                  title={status === "active" ? "Template is active — click to deactivate" : "Template is inactive — click to activate"}
                   className={cn(
-                    "rounded-full border px-2 py-0 text-[10px]",
+                    "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-sm text-xs font-semibold border-[0.5px] cursor-pointer transition-all select-none shadow-2xs hover:opacity-90 active:scale-95",
                     status === "active"
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/50"
-                      : "border-border bg-muted text-muted-foreground"
+                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-700/50 hover:bg-emerald-500/20"
+                      : "border-border bg-muted/60 text-muted-foreground hover:bg-muted"
                   )}
                 >
-                  {status === "active" ? "Active" : "Inactive"}
-                </Badge>
+                  <span className="relative flex h-2 w-2">
+                    {status === "active" && (
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    )}
+                    <span
+                      className={cn(
+                        "relative inline-flex rounded-full h-2 w-2",
+                        status === "active" ? "bg-emerald-500" : "bg-muted-foreground/60"
+                      )}
+                    />
+                  </span>
+                  <span>{status === "active" ? "Active" : "Inactive"}</span>
+                
+                </button>
+
+                {/* <span className="text-[11px] text-muted-foreground hidden md:inline">
+                  {status === "active"
+                    ? "• Live for employee submissions"
+                    : "• Paused (hidden from employees)"}
+                </span> */}
               </div>
-              <Input
-                id="template-name-input"
-                value={templateName}
-                onChange={(e) => setTemplateName(e.target.value)}
-                placeholder="Enter template name..."
-                className="h-10 px-3 text-lg font-bold shadow-xs w-full min-w-[300px]"
-              />
+
+              {/* Template Name Input Field */}
+              <div className="relative">
+                <Input
+                  id="template-name-input"
+                  value={templateName}
+                  onChange={(e) => setTemplateName(e.target.value)}
+                  placeholder="Enter template name (e.g. Daily Vehicle Inspection)..."
+                  className="h-10 text-base font-bold text-foreground bg-background border-[0.5px] border-input placeholder:text-muted-foreground/50 shadow-2xs focus-visible:ring-[0.5px] focus-visible:ring-ring focus-visible:border-[0.5px] transition-all pr-8"
+                />
+                <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50">
+                  <Pencil className="h-3.5 w-3.5" />
+                </div>
+              </div>
+
+              
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 items-end">
-            <Button variant="outline" size="sm" onClick={() => setShowStatusConfirm(true)}>
-              {status === "active" ? (
-                <Ban className="mr-1.5 h-3.5 w-3.5 text-amber-600" />
-              ) : (
-                <Power className="mr-1.5 h-3.5 w-3.5 text-emerald-600" />
+          <div className="flex items-center gap-2 self-end sm:self-center shrink-0 pt-1 sm:pt-0">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowStatusConfirm(true)}
+              className={cn(
+                "cursor-pointer text-xs font-medium border-[0.5px] border-border shadow-2xs hover:bg-muted/80 transition-colors h-10!",
+                status === "active"
+                  ? "hover:border-amber-500/50 hover:text-amber-600 dark:hover:text-amber-400"
+                  : "hover:border-emerald-500/50 hover:text-emerald-600 dark:hover:text-emerald-400"
               )}
-              {status === "active" ? "Deactivate" : "Activate"}
+            >
+              {status === "active" ? (
+                <>
+                  <Ban className="mr-1.5 h-3.5 w-3.5 text-amber-600 dark:text-amber-500" />
+                  Deactivate
+                </>
+              ) : (
+                <>
+                  <Power className="mr-1.5 h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                  Activate
+                </>
+              )}
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setShowDeleteTemplate(true)}>
-              <Trash2 className="mr-1.5 h-3.5 w-3.5 text-red-500" /> Delete template
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDeleteTemplate(true)}
+              className="cursor-pointer text-xs font-medium border-[0.5px] border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive shadow-2xs transition-colors h-10!"
+            >
+              <Trash2 className="mr-1.5 h-3.5 w-3.5 text-destructive" />
+              Delete template
             </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 max-h-[calc(100vh-225px)] overflow-y-auto">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 max-h-[calc(100vh-216px)] overflow-y-auto table-scrollbar pr-1.5">
           {/* Left / main column --------------------------------------------- */}
           <div className="flex flex-col gap-3 lg:col-span-2">
             <ImageCaptureField
@@ -722,7 +794,7 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
             />
 
             {/* Custom field builder */}
-            <div className="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-xs">
+            <div className="rounded-sm border border-border bg-card text-card-foreground p-4 shadow-xs">
               <div className="mb-3 flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-semibold text-foreground">Form fields</h3>
@@ -730,7 +802,7 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
                     Add your own labels and pick the input type each one needs.
                   </p>
                 </div>
-                <Button size="sm" onClick={openAddField} className="shadow-xs cursor-pointer">
+                <Button size="sm" onClick={openAddField} className="shadow-xs cursor-pointer h-10!">
                   <Plus className="mr-1.5 h-3.5 w-3.5" /> Add label
                 </Button>
               </div>
@@ -776,7 +848,7 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
 
           {/* Right column: live preview + access control + camera settings --------------------- */}
           <div className="flex flex-col gap-3">
-            <div className="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-xs">
+            <div className="rounded-sm border border-border bg-card text-card-foreground p-4 shadow-xs">
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <h3 className="text-sm font-semibold text-foreground">Enable Camera / Photo Upload</h3>
@@ -800,7 +872,7 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
               </div>
             </div>
 
-            <div className="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-xs">
+            <div className="rounded-sm border border-border bg-card text-card-foreground p-4 shadow-xs">
               <h3 className="mb-2 text-sm font-semibold text-foreground">Live preview</h3>
               <div className="flex flex-col gap-3">
                 {cameraOpen && (
@@ -832,7 +904,7 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
               </div>
             </div>
 
-            <div className="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-xs">
+            <div className="rounded-sm border border-border bg-card text-card-foreground p-4 shadow-xs">
               <h3 className="mb-2 text-sm font-semibold text-foreground">Assign Employees (Grant Access)</h3>
               <p className="mb-2 text-xs text-muted-foreground">
                 Grant specific employees access to use this template. As an admin, you can edit all features.
@@ -863,7 +935,7 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
               </div>
 
               {accessUsers.length > 0 && (
-                <ul className="mt-3 divide-y divide-[#f1f5fe]">
+                <ul className="mt-3 divide-y divide-border/60 max-h-60 overflow-y-auto table-scrollbar pr-1">
                   {accessUsers.map((u) => (
                     <li key={u.id} className="flex items-center justify-between py-2 text-sm">
                       <div>
@@ -932,7 +1004,7 @@ export default function TemplateBuilderPage({ templateId }: { templateId?: strin
           </div>
 
           {/* Form Body */}
-          <div className="p-5 sm:p-6 space-y-4 bg-card overflow-y-auto max-h-[calc(85vh-130px)]">
+          <div className="p-5 sm:p-6 space-y-4 bg-card overflow-y-auto max-h-[calc(85vh-130px)] table-scrollbar">
             {/* Label input */}
             <div className="space-y-1.5">
               <Label htmlFor="field-label" className="text-xs sm:text-sm font-semibold text-foreground flex items-center gap-1">

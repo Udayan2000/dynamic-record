@@ -313,8 +313,8 @@ export default function TemplateUploadPage({ params }: { params: Promise<{ id: s
   }
 
   return (
-    <section className="w-full bg-card border border-border text-card-foreground rounded-lg p-4 shadow-xs">
-      <div className="mb-4 flex flex-col gap-3 rounded-lg border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between shadow-xs">
+    <section className="w-full bg-card border border-border text-card-foreground rounded-sm p-4 shadow-xs">
+      <div className="mb-4 flex flex-col gap-3 rounded-sm border border-border bg-card p-2 sm:flex-row sm:items-center sm:justify-between shadow-xs">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => router.back()} title="Back" className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
@@ -338,7 +338,7 @@ export default function TemplateUploadPage({ params }: { params: Promise<{ id: s
         )}
         <div className=" W-full">
           <div className="h-full">
-          <form onSubmit={handleSubmit} className="space-y-4 h-[calc(100vh-204px)] overflow-y-auto">
+          <form onSubmit={handleSubmit} className="space-y-4 h-[calc(100vh-204px)] overflow-y-auto table-scrollbar pr-1.5">
             {template.cameraAccess && (
               <UserImageCapture
                 image={formData.userImage || null}

@@ -43,7 +43,7 @@ export default function RecordsPage() {
   }
 
   return (
-    <div className="w-full bg-card border border-border rounded-lg p-3 sm:p-4 shadow-xs">
+    <div className="w-full bg-card border border-border rounded-sm p-3 sm:p-4 shadow-xs">
       <div className="mb-2">
         <h1 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">Records Hub</h1>
         <p className="text-xs text-muted-foreground">Select a template to view, search, and export its submitted records.</p>
@@ -57,7 +57,7 @@ export default function RecordsPage() {
         </div>
       ) : (
         <div className="flex flex-col">
-          <div className="flex w-full flex-1 min-h-0 flex-col rounded-lg border border-border bg-card text-card-foreground shadow-xs mt-3 overflow-hidden">
+          <div className="flex w-full flex-1 min-h-0 flex-col rounded-sm border border-border bg-card text-card-foreground shadow-xs mt-3 overflow-hidden">
             <div className="flex justify-between items-center gap-2 border-b border-border p-3 sm:p-4 bg-card">
               <div className="w-full max-w-[400px]">
                 <Input

@@ -81,13 +81,13 @@ export default function TemplateView({ templateId }: { templateId: string }) {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-1 flex flex-col gap-4">
-                    <div className="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-xs">
+                    <div className="rounded-sm border border-border bg-card text-card-foreground p-4 shadow-xs">
                         <div className="flex items-center gap-2 mb-4">
                             <Users className="h-5 w-5 text-muted-foreground" />
                             <h3 className="font-semibold text-foreground">Authorized Access</h3>
                         </div>
                         {template.access && template.access.length > 0 ? (
-                            <div className="flex flex-col gap-3 max-h-[300px] overflow-y-auto pr-2">
+                            <div className="flex flex-col gap-3 max-h-[300px] overflow-y-auto pr-2 table-scrollbar">
                                 {template.access.map(user => (
                                     <div key={user.id} className="flex flex-col gap-0.5 border-b border-border/60 pb-2 last:border-0 last:pb-0">
                                         <span className="text-sm font-medium text-foreground">{user.name}</span>
@@ -102,7 +102,7 @@ export default function TemplateView({ templateId }: { templateId: string }) {
                 </div>
 
                 <div className="md:col-span-2">
-                    <div className="rounded-lg border border-border bg-card text-card-foreground p-4 shadow-xs min-h-[300px]">
+                    <div className="rounded-sm border border-border bg-card text-card-foreground p-4 shadow-xs min-h-[300px]">
                         <div className="flex items-center gap-2 mb-6">
                             <LayoutTemplate className="h-5 w-5 text-muted-foreground" />
                             <h3 className="font-semibold text-foreground">Form Fields Preview</h3>
